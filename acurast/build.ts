@@ -8,6 +8,7 @@ await esbuild.build({
   bundle: true,
   format: "esm",
   target: "es2022",
+  external: ["canvas"] 
 });
 
 await esbuild.stop();
