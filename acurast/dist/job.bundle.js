@@ -11091,8 +11091,20 @@ function buildReport(keyword, enclosure, baseline, parallax) {
   };
 }
 async function runScan(keyword) {
-  const enclosure = await fetchEnclosure(keyword);
-  const baseline = await fetchBaseline(keyword);
+  let enclosure;
+  try {
+    enclosure = await fetchEnclosure(keyword);
+  } catch (e) {
+    console.log(`enclosure failed: ${e instanceof Error ? e.message : String(e)}`);
+    enclosure = { source: "failed:enclosure", rows: [] };
+  }
+  let baseline;
+  try {
+    baseline = await fetchBaseline(keyword);
+  } catch (e) {
+    console.log(`baseline failed: ${e instanceof Error ? e.message : String(e)}`);
+    baseline = { source: "failed:baseline", rows: [], wiki: [] };
+  }
   const parallax = calculateParallax(enclosure, baseline);
   return buildReport(keyword, enclosure, baseline, parallax);
 }

@@ -17,7 +17,7 @@ Usage:
 Dependencies (pip):
     requests
     beautifulsoup4
-    lxml          # optional but recommended; falls back to html.parser
+    lxml          
 
 DEPENDENCY-LIGHT BY DESIGN:
     No scikit-learn. No numpy. No spacy. No NLTK. Pure-Python TF-IDF

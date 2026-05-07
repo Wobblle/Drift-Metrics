@@ -627,8 +627,35 @@ export function buildReport(
 // ============================================================================
 
 export async function runScan(keyword: string): Promise<DisplacementReport> {
-  const enclosure = await fetchEnclosure(keyword);
-  const baseline  = await fetchBaseline(keyword);
-  const parallax  = calculateParallax(enclosure, baseline);
+  // ---------------------------------------------------------------------
+  // BULLETPROOF SOURCE ISOLATION
+  // ---------------------------------------------------------------------
+  // Each scrape source (Bing/Yahoo, DDG, Wikipedia) gets its own try/catch
+  // so a NetworkError from the TEE firewall — typically triggered by a
+  // search engine 30x-redirecting to a localized hostname not on the
+  // egress allowlist — cannot kill the whole job. The report still gets
+  // computed (with confidence ≈ 0 if both sides failed) and posted, so:
+  //   • the frontend stops polling and renders something
+  //   • the queue row gets deleted (no orphans)
+  //   • the operator sees the failure pattern in the logs and the
+  //     report's _debug fields (token counts, source markers)
+  // ---------------------------------------------------------------------
+  let enclosure: EnclosureCorpus;
+  try {
+    enclosure = await fetchEnclosure(keyword);
+  } catch (e) {
+    console.log(`enclosure failed: ${e instanceof Error ? e.message : String(e)}`);
+    enclosure = { source: "failed:enclosure", rows: [] };
+  }
+
+  let baseline: BaselineCorpus;
+  try {
+    baseline = await fetchBaseline(keyword);
+  } catch (e) {
+    console.log(`baseline failed: ${e instanceof Error ? e.message : String(e)}`);
+    baseline = { source: "failed:baseline", rows: [], wiki: [] };
+  }
+
+  const parallax = calculateParallax(enclosure, baseline);
   return buildReport(keyword, enclosure, baseline, parallax);
 }
