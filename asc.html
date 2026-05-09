@@ -107,6 +107,9 @@
         <button id="asc-edit" class="mono text-[11px] border border-line2 px-3 py-1.5 hover:border-amber hover:text-amber">
           [EDIT]
         </button>
+        <button id="asc-share" class="mono text-[11px] border border-line2 px-3 py-1.5 hover:border-amber hover:text-amber">
+          [SHARE]
+        </button>
         <button id="asc-clear" class="mono text-[11px] border border-line2 px-3 py-1.5 hover:border-red hover:text-red">
           [CLEAR]
         </button>
@@ -129,6 +132,32 @@
       <p class="mono text-[10px] text-mute mt-3">
         Press [ENTER] to apply. Codes are stored in localStorage on this device only and never
         transmitted to any server until they're redeemed against a query.
+      </p>
+    </div>
+
+    <div id="asc-share-panel" class="hidden border-t border-line2 p-5">
+      <div class="flex items-baseline justify-between mb-2">
+        <div class="label">SHARABLE URL</div>
+        <div class="mono text-[10px] text-mute" id="asc-share-status"></div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="mono text-amber text-[16px] mr-1">&gt;</span>
+        <input id="asc-share-url" type="text" readonly
+               class="mono bg-bg border border-line2 px-3 py-2 text-fg text-[12px] flex-1 focus:border-amber"
+               style="letter-spacing:0.02em;" />
+        <button id="asc-share-copy" class="mono text-[11px] border border-amber text-amber px-3 py-2 hover:bg-amber hover:text-bg">
+          [COPY]
+        </button>
+        <button id="asc-share-open" class="mono text-[11px] border border-line2 px-3 py-2 hover:border-amber hover:text-amber">
+          [OPEN]
+        </button>
+      </div>
+      <p class="mono text-[10px] text-mute mt-3 max-w-[680px]">
+        Anyone who opens this URL inherits your code. Their browser stores it. They can run
+        scrapes against the same balance you can &mdash; until that balance is gone. Possession
+        is access. The URL is stripped from the address bar after the code is loaded, so it
+        doesn&apos;t linger in screenshots or scrollback. If you didn&apos;t intend to share,
+        run <span class="text-amber">[CLEAR]</span> immediately.
       </p>
     </div>
   </section>
@@ -219,7 +248,22 @@
     </p>
     <p>
       Codes are sharable by design. If you paste your code on Twitter, anyone can use it until
-      the balance runs out. That's intentional. The system rewards possession, not identity.
+      the balance runs out. That&apos;s intentional. The system rewards possession, not identity.
+    </p>
+
+    <h2>Sharing via URL</h2>
+    <p>
+      The simplest way to hand a code to someone is a URL. Append <code>?code=YOUR-CODE</code>
+      to any DriftMetrics page and the recipient&apos;s browser ingests it on load and stores it
+      in localStorage. The query string is stripped from the address bar after ingestion so it
+      doesn&apos;t persist in scrollback or screenshots.
+    </p>
+    <p>
+      Use the <code>[SHARE]</code> button above to generate that URL automatically and copy it
+      to your clipboard. Drop it in a Discord, on a sticker, in a private message. The recipient
+      doesn&apos;t install anything, doesn&apos;t sign up, doesn&apos;t need to know what a code
+      is. They click the link, they have access. If twelve people click the link, twelve people
+      have access &mdash; until the balance is gone.
     </p>
 
   </section>
@@ -250,17 +294,34 @@
     meta.textContent = prefix ? `prefix: ${prefix}` : '';
   }
 
+  // Build a sharable URL for the given code. Points at index.html on the
+  // current origin so the recipient lands on the report page already authed.
+  function buildShareUrl(code) {
+    if (!code) return '';
+    const url = new URL('./index.html', window.location.href);
+    url.searchParams.set('code', code);
+    url.hash = '';
+    return url.toString();
+  }
+
   whenReady(() => {
     refreshCurrentCode();
-    const editBtn   = document.getElementById('asc-edit');
-    const panel     = document.getElementById('asc-edit-panel');
-    const input     = document.getElementById('asc-input');
-    const saveBtn   = document.getElementById('asc-save');
-    const clearBtn  = document.getElementById('asc-clear');
+    const editBtn      = document.getElementById('asc-edit');
+    const editPanel    = document.getElementById('asc-edit-panel');
+    const input        = document.getElementById('asc-input');
+    const saveBtn      = document.getElementById('asc-save');
+    const clearBtn     = document.getElementById('asc-clear');
+    const shareBtn     = document.getElementById('asc-share');
+    const sharePanel   = document.getElementById('asc-share-panel');
+    const shareUrlIn   = document.getElementById('asc-share-url');
+    const shareCopyBtn = document.getElementById('asc-share-copy');
+    const shareOpenBtn = document.getElementById('asc-share-open');
+    const shareStatus  = document.getElementById('asc-share-status');
 
     editBtn.addEventListener('click', () => {
-      panel.classList.toggle('hidden');
-      if (!panel.classList.contains('hidden')) {
+      sharePanel.classList.add('hidden');
+      editPanel.classList.toggle('hidden');
+      if (!editPanel.classList.contains('hidden')) {
         input.value = window.DM.readStoredCode();
         setTimeout(() => input.focus(), 30);
       }
@@ -268,17 +329,63 @@
     function apply() {
       const v = (input.value || '').trim().toUpperCase();
       window.DM.writeStoredCode(v);
-      panel.classList.add('hidden');
+      editPanel.classList.add('hidden');
       refreshCurrentCode();
     }
     saveBtn.addEventListener('click', apply);
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter')  { e.preventDefault(); apply(); }
-      if (e.key === 'Escape') { e.preventDefault(); panel.classList.add('hidden'); }
+      if (e.key === 'Escape') { e.preventDefault(); editPanel.classList.add('hidden'); }
     });
     clearBtn.addEventListener('click', () => {
       window.DM.writeStoredCode('');
       refreshCurrentCode();
+      sharePanel.classList.add('hidden');
+    });
+
+    function refreshShareUrl() {
+      const code = window.DM?.readStoredCode?.() || '';
+      shareUrlIn.value = code ? buildShareUrl(code) : '';
+      shareStatus.textContent = '';
+    }
+
+    shareBtn.addEventListener('click', () => {
+      const code = window.DM?.readStoredCode?.() || '';
+      editPanel.classList.add('hidden');
+      if (!code) {
+        sharePanel.classList.remove('hidden');
+        shareUrlIn.value = '';
+        shareStatus.textContent = 'no code stored';
+        shareStatus.className = 'mono text-[10px] text-red';
+        return;
+      }
+      sharePanel.classList.toggle('hidden');
+      if (!sharePanel.classList.contains('hidden')) {
+        refreshShareUrl();
+        setTimeout(() => { shareUrlIn.focus(); shareUrlIn.select(); }, 30);
+      }
+    });
+
+    shareCopyBtn.addEventListener('click', async () => {
+      const url = shareUrlIn.value;
+      if (!url) return;
+      try {
+        await navigator.clipboard.writeText(url);
+        shareStatus.textContent = 'copied to clipboard';
+        shareStatus.className = 'mono text-[10px] text-phos';
+      } catch (_e) {
+        // Clipboard API can fail in non-secure contexts. Fall back to selection.
+        shareUrlIn.focus();
+        shareUrlIn.select();
+        shareStatus.textContent = 'select and copy manually (CTRL+C)';
+        shareStatus.className = 'mono text-[10px] text-amber';
+      }
+    });
+
+    shareOpenBtn.addEventListener('click', () => {
+      const url = shareUrlIn.value;
+      if (!url) return;
+      window.open(url, '_blank', 'noopener');
     });
   });
 </script>

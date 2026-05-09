@@ -457,7 +457,10 @@ window.DM = (() => {
         </div>
         <div class="px-3 h-6 border-t border-line2 mono text-[10px] text-mute flex items-center justify-between">
           <span id="dm-code-status">status: <span class="text-fg" id="dm-code-status-val">NONE</span></span>
-          <span class="text-dim">backspace clear &middot; enter apply</span>
+          <span class="flex items-center gap-3">
+            <button id="dm-code-share" type="button" class="text-amber hover:underline disabled:text-dim disabled:hover:no-underline" disabled>[SHARE URL]</button>
+            <span class="text-dim">enter apply</span>
+          </span>
         </div>
       </div>
     `;
@@ -465,16 +468,53 @@ window.DM = (() => {
 
     const input = document.getElementById('dm-code-input');
     const statusVal = document.getElementById('dm-code-status-val');
+    const shareBtn = document.getElementById('dm-code-share');
+
+    // Build a sharable URL pointing at the report page on this origin.
+    function buildShareUrl(code) {
+      if (!code) return '';
+      const url = new URL('./index.html', window.location.href);
+      url.searchParams.set('code', code);
+      url.hash = '';
+      return url.toString();
+    }
 
     function refreshStatus() {
       const stored = readStoredCode();
-      if (!stored) { statusVal.textContent = 'NONE'; statusVal.className = 'text-fg'; return; }
+      if (!stored) {
+        statusVal.textContent = 'NONE';
+        statusVal.className = 'text-fg';
+        if (shareBtn) { shareBtn.disabled = true; shareBtn.textContent = '[SHARE URL]'; }
+        return;
+      }
       const remaining = window.__dmRemaining;
       if (typeof remaining === 'number') {
         statusVal.innerHTML = `<span class="text-amber">${stored}</span> &middot; <span class="text-fg">${remaining} LEFT</span>`;
       } else {
         statusVal.innerHTML = `<span class="text-amber">${stored}</span> &middot; <span class="text-mute">unverified</span>`;
       }
+      if (shareBtn) { shareBtn.disabled = false; shareBtn.textContent = '[SHARE URL]'; }
+    }
+
+    if (shareBtn) {
+      shareBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const stored = readStoredCode();
+        if (!stored) return;
+        const url = buildShareUrl(stored);
+        try {
+          await navigator.clipboard.writeText(url);
+          shareBtn.textContent = '[COPIED]';
+        } catch (_err) {
+          // Clipboard API unavailable (insecure context, etc.). Fall back to
+          // selecting the URL in the input so the user can copy manually.
+          input.value = url;
+          input.focus();
+          input.select();
+          shareBtn.textContent = '[SELECT+COPY]';
+        }
+        setTimeout(() => { if (shareBtn) shareBtn.textContent = '[SHARE URL]'; }, 1800);
+      });
     }
 
     function open() {
@@ -632,7 +672,39 @@ window.DM = (() => {
   }
 
   // ---------- init --------------------------------------------------------
+  // ASC shape: three uppercase letters, dash, then alphanum/dash/section.
+  // Lower-case input is acceptable — it gets uppercased by writeStoredCode.
+  // Length capped to match the EDIT panel maxlength so a malicious URL can't
+  // stuff localStorage with a giant payload.
+  const ASC_CODE_SHAPE = /^[A-Z]{3}-[A-Z0-9§-]{1,44}$/;
+
+  // ---------- URL ?code= ingestion ----------------------------------------
+  // Possession-based access: a code in the URL replaces the stored code.
+  // Lets anyone share a sticker/QR/Discord link and have the recipient inherit
+  // the same compute budget without copy-pasting into the Ctrl+K panel.
+  // After ingestion the param is stripped from the URL so it doesn't sit in
+  // the address bar or accidentally end up in screenshots / scrollback.
+  // Malformed codes are silently dropped (param still stripped) so a bad
+  // link can't poison localStorage with garbage.
+  function ingestCodeFromUrl() {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (!params.has('code')) return;
+      const incoming = (params.get('code') || '').trim().toUpperCase();
+      if (incoming && ASC_CODE_SHAPE.test(incoming)) {
+        writeStoredCode(incoming);
+      }
+      params.delete('code');
+      const cleanQuery = params.toString();
+      const cleanUrl = window.location.pathname
+        + (cleanQuery ? '?' + cleanQuery : '')
+        + window.location.hash;
+      window.history.replaceState({}, '', cleanUrl);
+    } catch (_e) { /* same-origin restrictions can throw; ignore */ }
+  }
+
   function init() {
+    ingestCodeFromUrl();
     ensureCodePanel();
     renderBadge();
     applyIdentity();                        // anon or asl://founders-001 etc.
