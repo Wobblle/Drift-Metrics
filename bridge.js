@@ -372,6 +372,26 @@ window.DM = (() => {
     return rows.length ? rows[0].payload : null;
   }
 
+  // ---------- code verification (read-only balance lookup) ---------------
+  // Hits the peek_code RPC. Returns { ok, remaining, tier, prefix } on
+  // success or { ok:false, error } on failure. Network/RPC failures map
+  // to null so callers can distinguish "I couldn't reach the server" from
+  // "the server says this code is invalid".
+  async function peekCode(rawCode) {
+    const code = (rawCode || '').trim().toUpperCase();
+    if (!code) return { ok: false, error: 'empty' };
+    try {
+      const r = await fetch(`${DM_SUPABASE_URL}/rest/v1/rpc/peek_code`, {
+        method: 'POST',
+        headers: restHeaders(),
+        body: JSON.stringify({ p_code: code }),
+      });
+      if (!r.ok) return null;
+      const data = await r.json();
+      return data || null;
+    } catch (_) { return null; }
+  }
+
   // ---------- submit via Edge Function ------------------------------------
   async function submit(keyword, requestId) {
     const code = readStoredCode();
@@ -488,8 +508,15 @@ window.DM = (() => {
         return;
       }
       const remaining = window.__dmRemaining;
-      if (typeof remaining === 'number') {
-        statusVal.innerHTML = `<span class="text-amber">${stored}</span> &middot; <span class="text-fg">${remaining} LEFT</span>`;
+      const err = window.__dmCodeError;
+      if (err) {
+        statusVal.innerHTML = `<span class="text-amber">${stored}</span> &middot; <span class="text-red">${err.toUpperCase()}</span>`;
+      } else if (typeof remaining === 'number') {
+        const tone = remaining > 0 ? 'text-fg' : 'text-red';
+        const label = remaining > 0 ? `${remaining} LEFT` : 'DEPLETED';
+        statusVal.innerHTML = `<span class="text-amber">${stored}</span> &middot; <span class="${tone}">${label}</span>`;
+      } else if (remaining === 'pending') {
+        statusVal.innerHTML = `<span class="text-amber">${stored}</span> &middot; <span class="text-mute">verifying&hellip;</span>`;
       } else {
         statusVal.innerHTML = `<span class="text-amber">${stored}</span> &middot; <span class="text-mute">unverified</span>`;
       }
@@ -524,13 +551,41 @@ window.DM = (() => {
       setTimeout(() => input.focus(), 30);
     }
     function close() { panel.classList.add('hidden'); }
-    function apply() {
+    async function apply() {
       const v = (input.value || '').trim().toUpperCase();
       writeStoredCode(v);
-      window.__dmRemaining = undefined; // unverified until next coded scrape
+      if (!v) {
+        window.__dmRemaining = undefined;
+        window.__dmCodeError = null;
+        refreshStatus();
+        renderBadge();
+        renderCredits();
+        close();
+        return;
+      }
+      // Verify against the server so the user sees their actual balance
+      // before we close the panel. Keeps the UI honest about what's stored.
+      window.__dmRemaining = 'pending';
+      window.__dmCodeError = null;
       refreshStatus();
       renderBadge();
-      close();
+      renderCredits();
+      const peek = await peekCode(v);
+      if (peek && peek.ok === true) {
+        window.__dmRemaining = peek.remaining;
+        window.__dmCodeError = null;
+      } else if (peek && peek.ok === false) {
+        window.__dmRemaining = null;
+        window.__dmCodeError = peek.error || 'invalid';
+      } else {
+        window.__dmRemaining = undefined;
+        window.__dmCodeError = 'unreachable';
+      }
+      refreshStatus();
+      renderBadge();
+      renderCredits();
+      // Close after a short beat so the user sees the verification land.
+      setTimeout(close, 900);
     }
 
     input.addEventListener('keydown', (e) => {
@@ -565,22 +620,54 @@ window.DM = (() => {
 
     const prefix = (stored.match(/^[A-Z]{3}/) || ['?'])[0];
     const remaining = window.__dmRemaining;
-    const tail = (typeof remaining === 'number')
-      ? `${remaining} LEFT`
-      : 'READY';
+    const err = window.__dmCodeError;
+
+    let tail, tone;
+    if (err) {
+      tail = err.toUpperCase();
+      tone = 'red';
+    } else if (typeof remaining === 'number') {
+      if (remaining > 0) { tail = `${remaining} LEFT`; tone = 'amber'; }
+      else { tail = 'DEPLETED'; tone = 'red'; }
+    } else if (remaining === 'pending') {
+      tail = 'CHECKING…'; tone = 'mute';
+    } else {
+      tail = 'READY'; tone = 'amber';
+    }
 
     let badge = existing;
     if (!badge) {
       badge = document.createElement('span');
       badge.id = 'dm-code-badge';
-      badge.className = 'mono text-[10px] text-amber border border-amber px-2 py-0.5 ml-3 cursor-pointer';
       badge.title = 'Ctrl+K to edit';
       badge.addEventListener('click', () => window.DM_panel?.open());
-      // append to the right-side stack of the meta bar
       const right = target.children[1] || target;
       right.appendChild(badge);
     }
+    badge.className = `mono text-[10px] text-${tone} border border-${tone === 'mute' ? 'line2' : tone} px-2 py-0.5 ml-3 cursor-pointer`;
     badge.textContent = `${prefix} · ${tail}`;
+  }
+
+  // ---------- credits indicator in the search rig footer -----------------
+  // Replaces the old static "CREDITS ∞" line with live state. index.html
+  // exposes <span id="dm-credits"> in the search rig's footer for this.
+  function renderCredits() {
+    const el = document.getElementById('dm-credits');
+    if (!el) return;
+    const stored = readStoredCode();
+    const remaining = window.__dmRemaining;
+    const err = window.__dmCodeError;
+    if (!stored) {
+      el.innerHTML = '<span class="text-mute">no code</span>';
+    } else if (err) {
+      el.innerHTML = `<span class="text-red">${err.toUpperCase()}</span>`;
+    } else if (typeof remaining === 'number') {
+      el.innerHTML = `<span class="${remaining > 0 ? 'text-fg' : 'text-red'}">${remaining}</span>`;
+    } else if (remaining === 'pending') {
+      el.innerHTML = '<span class="text-mute">checking&hellip;</span>';
+    } else {
+      el.innerHTML = '<span class="text-mute">unverified</span>';
+    }
   }
 
   // ---------- public entry point ------------------------------------------
@@ -614,11 +701,44 @@ window.DM = (() => {
       return;
     }
 
-    // 2. Submit (coded if storage has a code, otherwise cached-open).
+    // 2. Access gate. Cache hits above are free; a fresh scrape requires
+    //    a code with positive balance. Verify against the server so we
+    //    don't dispatch a request the backend will silently drop.
     const stored = readStoredCode();
-    logLine(stored
-      ? `DISPATCHING CODED SCAN &middot; ${stored.slice(0,3)}-…`
-      : `DISPATCHING TO FLEET &middot; req=${requestId.slice(0,8)}`);
+    if (!stored) {
+      logLine('NO CACHED REPORT FOR THIS QUERY', 'text-mute');
+      logLine('A FRESH SCRAPE REQUIRES AN ACCESS CODE', 'text-red');
+      logLine('       press [CTRL+K] to enter your code', 'text-mute');
+      return;
+    }
+    logLine(`VERIFYING CODE &middot; ${stored.slice(0,3)}-…`);
+    const peek = await peekCode(stored);
+    if (!peek) {
+      logLine('ERR: COULD NOT REACH GATEKEEPER', 'text-red');
+      logLine('       network or service is briefly unavailable; retry in a moment', 'text-mute');
+      return;
+    }
+    if (peek.ok !== true) {
+      const reason = (peek.error || 'invalid').toUpperCase();
+      window.__dmRemaining = null;
+      window.__dmCodeError = peek.error || 'invalid';
+      renderBadge(); renderCredits();
+      logLine(`ERR: CODE ${reason}`, 'text-red');
+      logLine('       press [CTRL+K] to enter a different code', 'text-mute');
+      return;
+    }
+    if (peek.remaining <= 0) {
+      window.__dmRemaining = 0;
+      window.__dmCodeError = null;
+      renderBadge(); renderCredits();
+      logLine('ERR: CODE DEPLETED', 'text-red');
+      logLine('       this code is out of scrapes; use a different one', 'text-mute');
+      return;
+    }
+    window.__dmRemaining = peek.remaining;
+    window.__dmCodeError = null;
+    renderBadge(); renderCredits();
+    logLine(`DISPATCHING SCAN &middot; ${stored.slice(0,3)}-…`);
 
     const result = await submit(keyword, requestId);
     if (!result || result.ok === false) {
@@ -628,9 +748,10 @@ window.DM = (() => {
     if (result.coded && typeof result.remaining === 'number') {
       window.__dmRemaining = result.remaining;
       renderBadge();
-      logLine(`CODE BURNED &middot; ${result.remaining} LEFT`, 'text-amber');
+      renderCredits();
+      logLine(`SCRAPE STARTED &middot; ${result.remaining} LEFT`, 'text-amber');
     } else {
-      logLine('JOB ACCEPTED &middot; awaiting worker…');
+      logLine('JOB ACCEPTED &middot; awaiting worker&hellip;');
     }
 
     // 3. Poll for result. 45s ceiling; silent timeout = node timeout.
@@ -703,10 +824,34 @@ window.DM = (() => {
     } catch (_e) { /* same-origin restrictions can throw; ignore */ }
   }
 
+  // Verify the stored code in the background so the badge / credits show
+  // real numbers on page load instead of "READY" / "—". Failure is non-fatal:
+  // the gate in runRemote will re-verify before any scrape dispatches.
+  async function verifyStoredCodeOnLoad() {
+    const stored = readStoredCode();
+    if (!stored) { renderCredits(); renderBadge(); return; }
+    window.__dmRemaining = 'pending';
+    window.__dmCodeError = null;
+    renderCredits(); renderBadge();
+    const peek = await peekCode(stored);
+    if (peek && peek.ok === true) {
+      window.__dmRemaining = peek.remaining;
+      window.__dmCodeError = null;
+    } else if (peek && peek.ok === false) {
+      window.__dmRemaining = null;
+      window.__dmCodeError = peek.error || 'invalid';
+    } else {
+      window.__dmRemaining = undefined;
+      window.__dmCodeError = null;
+    }
+    renderCredits(); renderBadge();
+  }
+
   function init() {
     ingestCodeFromUrl();
     ensureCodePanel();
     renderBadge();
+    renderCredits();
     applyIdentity();                        // anon or asl://founders-001 etc.
     renderHistory();                        // reveal history if localStorage has rows
     // Wire the [CLEAR] button on the history panel
@@ -715,6 +860,8 @@ window.DM = (() => {
 
     // Fetch and populate real footer stats from Supabase (non-blocking)
     fetchStats().then(applyStats);
+    // Verify the stored code in the background — non-blocking
+    verifyStoredCodeOnLoad();
 
     // If returning to a session that had output before, leave the search
     // hero compact and surface the most recent history entry.
@@ -742,6 +889,7 @@ window.DM = (() => {
     runRemote, mountTurnstile,
     // Identity / code management (REPORT, ASC pages)
     readStoredCode, writeStoredCode, applyIdentity, computeIdentity,
+    peekCode, renderCredits,
     // Stats + history (REPORT, INDEX pages)
     fetchStats, applyStats,
     readHistory, writeHistory, appendHistory, clearHistory, renderHistory,

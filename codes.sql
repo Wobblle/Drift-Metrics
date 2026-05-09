@@ -354,7 +354,55 @@ alter table codes enable row level security;
 -- (No policies. Locked down except for service_role which bypasses RLS.)
 
 -- ============================================================================
--- 9. EXAMPLE MINTING (run these by hand once, then delete from the file)
+-- 9. PEEK_CODE RPC
+--    Read-only balance lookup. Returns the same shape as a redeem result but
+--    never decrements, never inserts, never logs. The frontend uses this on
+--    code-apply (so users see "8 SCRAPES" instead of "unverified") and as a
+--    pre-flight gate before dispatching a fresh scrape.
+--
+--    Granted to anon: the anon key is already public, the keyspace is large
+--    enough that enumeration isn't useful, and a positive lookup grants
+--    nothing — burning still goes through the Turnstile-gated submit path.
+-- ============================================================================
+create or replace function peek_code(p_code text) returns jsonb
+language plpgsql stable security definer set search_path = public, pg_temp
+as $$
+declare
+  v_canon text;
+  v_row codes;
+begin
+  v_canon := dm_canonicalize_code(p_code);
+  if v_canon is null then
+    return jsonb_build_object('ok', false, 'error', 'invalid_format');
+  end if;
+
+  select * into v_row from codes where code = v_canon;
+  if not found then
+    return jsonb_build_object('ok', false, 'error', 'not_found');
+  end if;
+  if v_row.expires_at is not null and v_row.expires_at < now() then
+    return jsonb_build_object(
+      'ok', false, 'error', 'expired',
+      'remaining', v_row.balance
+    );
+  end if;
+
+  return jsonb_build_object(
+    'ok',        true,
+    'remaining', v_row.balance,
+    'tier',      dm_code_tier(v_canon),
+    'prefix',    dm_code_prefix(v_canon)
+  );
+end;
+$$;
+
+revoke execute on function peek_code(text) from public;
+grant  execute on function peek_code(text) to anon;
+grant  execute on function peek_code(text) to authenticated;
+grant  execute on function peek_code(text) to service_role;
+
+-- ============================================================================
+-- 10. EXAMPLE MINTING (run these by hand once, then delete from the file)
 -- ----------------------------------------------------------------------------
 -- select mint_code('ASL-FOUNDERS-001', 100, null, 'phase 4 launch — Jordan personal');
 -- select mint_code('ASL-FOUNDERS-002', 50,  null, 'first community drop');

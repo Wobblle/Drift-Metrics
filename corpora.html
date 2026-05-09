@@ -116,20 +116,7 @@
       because that's the signal that maps to "the algorithm is showing you a different reality."
     </p>
 
-    <h2>03 // The Bonus mechanic</h2>
-    <p>
-      Every Asleepius access code carries a hidden flag derivable from FNV-1a 32-bit hash of the
-      code string. About 40% of issued codes hit the flag. When a coded scrape happens with a
-      Bonus-flagged code, the resulting report's cache window stretches from 1 hour to 24 hours.
-    </p>
-    <p>
-      What this means in practice: a bit less than half the codes you mint quietly become 24-hour
-      gifts to anyone who queries that keyword next. The user paying for compute does extra work
-      for the public square without knowing it. Same code string, same hash, same flag — every
-      product that recognizes the prefix sees the same Bonus state.
-    </p>
-
-    <h2>04 // What this isn't</h2>
+    <h2>03 // What this isn't</h2>
     <p>
       Drift score is not bias detection. It does not say which side is "right." A high drift just
       means the two corpora disagree heavily on which words matter; both could be lying, neither
@@ -148,7 +135,7 @@
       snapshot, not a constant.
     </p>
 
-    <h2>05 // Honest limitations</h2>
+    <h2>04 // Honest limitations</h2>
     <ul class="mono text-[12px] text-fg space-y-2 mt-3 ml-4 list-disc">
       <li>
         <span class="text-fg">Source variability.</span>
@@ -179,7 +166,7 @@
       </li>
     </ul>
 
-    <h2>06 // Why this exists</h2>
+    <h2>05 // Why this exists</h2>
     <p>
       Most "search transparency" tools are built by ad-tech companies measuring how to optimize
       ad spend. DriftMetrics is the inverse: built by a small studio (Asleepius Games) to give

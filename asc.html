@@ -209,20 +209,20 @@
     <h2>How a code works</h2>
     <p>
       Every code is a string in the form <code>PREFIX-BODY</code>, e.g. <code>ASL-FOUNDERS-001</code>
-      or <code>DRF-7F4A-BLOOM</code>. Three uppercase ASCII letters, a dash, then any combination
-      of letters, digits, dashes, or section marks.
+      or <code>DRF-7F4A-BLOOM</code>. The prefix tells you what kind of code it is (universal,
+      event drop, promo pack); the body is what makes it unique. Codes are sharable strings,
+      not accounts.
     </p>
     <p>
-      The full string is hashed with FNV-1a 32-bit. From that hash, two properties are derived
-      <em>deterministically</em>: a tier (1&ndash;4, weighted toward low tiers) and a hidden flag
-      (~40% rate). Same string, same parse, every time, on every device, in every Asleepius product.
-      No server lookup needed for the deterministic layer.
+      Some properties of a code are baked into the string itself and never change &mdash; what
+      kind it is, where it can be used, what flavor it carries. Other properties, like how many
+      scrapes it has left, live on our side and update as it&apos;s used.
     </p>
     <p>
-      For products that meter real compute (DriftMetrics scrapes, future paid features) there's
-      a second layer: a server-side row keyed on the canonical code string with a <code>balance</code>
-      column. Each redemption decrements the balance atomically. When the balance hits zero,
-      the code still parses (Layer 1 still works) but no longer grants metered access.
+      For metered access &mdash; the kind that costs real compute, like a fresh DriftMetrics scan
+      &mdash; every code carries a balance. Each scan consumes one scrape. When a code runs out,
+      it stops dispatching new scans, though the cached public results stay free to read for
+      anyone.
     </p>
 
     <h2>How to get a code</h2>
@@ -242,9 +242,9 @@
 
     <h2>Privacy</h2>
     <p>
-      Your code lives in your browser's localStorage. We never see who you are; we only see that
-      <em>some</em> request submitted a code that decrements one row in our codes table by one.
-      We don't know which IP, browser, or device burned a use — only that a use happened.
+      Your code lives only in your browser. We never see who you are. When you run a scan we see
+      that some code consumed one of its scrapes &mdash; we don&apos;t track which person, IP,
+      browser, or device that was. No accounts means no profile to leak.
     </p>
     <p>
       Codes are sharable by design. If you paste your code on Twitter, anyone can use it until
@@ -287,11 +287,59 @@
     const code = window.DM?.readStoredCode?.() || '';
     const el = document.getElementById('asc-current');
     const meta = document.getElementById('asc-current-meta');
-    if (!code) { el.textContent = 'NONE'; el.className = 'mono text-mute text-[18px]'; meta.textContent = ''; return; }
+    if (!code) {
+      el.textContent = 'NONE';
+      el.className = 'mono text-mute text-[18px]';
+      meta.textContent = '';
+      meta.className = 'mono text-[10px] text-mute';
+      return;
+    }
     el.textContent = code;
     el.className = 'mono text-amber text-[18px]';
     const prefix = (code.match(/^[A-Z]{3}/) || [''])[0];
-    meta.textContent = prefix ? `prefix: ${prefix}` : '';
+    const remaining = window.__dmRemaining;
+    const err = window.__dmCodeError;
+    let line, klass;
+    if (err) {
+      line = `${err.toUpperCase()}`;
+      klass = 'mono text-[10px] text-red';
+    } else if (typeof remaining === 'number') {
+      if (remaining > 0) {
+        line = prefix ? `prefix ${prefix} · ${remaining} scrapes left` : `${remaining} scrapes left`;
+        klass = 'mono text-[10px] text-fg';
+      } else {
+        line = prefix ? `prefix ${prefix} · depleted` : 'depleted';
+        klass = 'mono text-[10px] text-red';
+      }
+    } else if (remaining === 'pending') {
+      line = 'verifying…';
+      klass = 'mono text-[10px] text-mute';
+    } else {
+      line = prefix ? `prefix ${prefix}` : '';
+      klass = 'mono text-[10px] text-mute';
+    }
+    meta.textContent = line;
+    meta.className = klass;
+  }
+
+  async function verifyAndRefresh() {
+    const code = window.DM?.readStoredCode?.() || '';
+    if (!code || !window.DM?.peekCode) { refreshCurrentCode(); return; }
+    window.__dmRemaining = 'pending';
+    window.__dmCodeError = null;
+    refreshCurrentCode();
+    const peek = await window.DM.peekCode(code);
+    if (peek && peek.ok === true) {
+      window.__dmRemaining = peek.remaining;
+      window.__dmCodeError = null;
+    } else if (peek && peek.ok === false) {
+      window.__dmRemaining = null;
+      window.__dmCodeError = peek.error || 'invalid';
+    } else {
+      window.__dmRemaining = undefined;
+      window.__dmCodeError = 'unreachable';
+    }
+    refreshCurrentCode();
   }
 
   // Build a sharable URL for the given code. Points at index.html on the
@@ -306,6 +354,7 @@
 
   whenReady(() => {
     refreshCurrentCode();
+    verifyAndRefresh();
     const editBtn      = document.getElementById('asc-edit');
     const editPanel    = document.getElementById('asc-edit-panel');
     const input        = document.getElementById('asc-input');
@@ -326,11 +375,14 @@
         setTimeout(() => input.focus(), 30);
       }
     });
-    function apply() {
+    async function apply() {
       const v = (input.value || '').trim().toUpperCase();
       window.DM.writeStoredCode(v);
       editPanel.classList.add('hidden');
+      window.__dmRemaining = undefined;
+      window.__dmCodeError = null;
       refreshCurrentCode();
+      await verifyAndRefresh();
     }
     saveBtn.addEventListener('click', apply);
     input.addEventListener('keydown', (e) => {
@@ -339,6 +391,8 @@
     });
     clearBtn.addEventListener('click', () => {
       window.DM.writeStoredCode('');
+      window.__dmRemaining = undefined;
+      window.__dmCodeError = null;
       refreshCurrentCode();
       sharePanel.classList.add('hidden');
     });

@@ -105,33 +105,59 @@
     <h2 class="label-fg mb-3">QUERY LIFECYCLE</h2>
     <div class="grid grid-cols-1 md:grid-cols-5 gap-px bg-line border border-line">
       <div class="bg-bg p-4">
-        <div class="label mb-2">1. CACHE PRE-FLIGHT</div>
+        <div class="label mb-2">1. CACHE LOOKUP</div>
         <p class="mono text-[11px] text-mute leading-relaxed">
-          Frontend checks if a fresh report exists for this keyword. Free, instant, no fleet involvement.
+          We check whether a recent report already exists for this keyword. If it does, you see it
+          immediately and nothing else happens. Free for everyone.
         </p>
       </div>
       <div class="bg-bg p-4">
-        <div class="label mb-2">2. DISPATCH</div>
+        <div class="label mb-2">2. ACCESS CHECK</div>
         <p class="mono text-[11px] text-mute leading-relaxed">
-          On miss, frontend POSTs to a Cloudflare-Turnstile-gated Edge Function. Code (if stored) gets burned here.
+          On a cache miss, we look at your access code. A valid code with available scrapes is
+          required to dispatch a fresh scan. No code or no balance: nothing happens.
         </p>
       </div>
       <div class="bg-bg p-4">
-        <div class="label mb-2">3. QUEUE</div>
+        <div class="label mb-2">3. DISPATCH</div>
         <p class="mono text-[11px] text-mute leading-relaxed">
-          Edge Function inserts a row into the Postgres queue. Hostile traffic gets silently shadowbanned.
+          The query is forwarded to the worker fleet. One scrape is consumed from your code&apos;s
+          balance for the dispatch.
         </p>
       </div>
       <div class="bg-bg p-4">
-        <div class="label mb-2">4. FLEET</div>
+        <div class="label mb-2">4. SCAN</div>
         <p class="mono text-[11px] text-mute leading-relaxed">
-          An Acurast TEE worker claims the row, scrapes the corpora, computes drift, posts the report.
+          A worker pulls source corpora, computes the displacement metrics, and writes the result.
+          Workers run in attested execution environments &mdash; we don&apos;t see what runs there.
         </p>
       </div>
       <div class="bg-bg p-4">
         <div class="label mb-2">5. RENDER</div>
         <p class="mono text-[11px] text-mute leading-relaxed">
-          Frontend polls every 3s, renders the Displacement Report when it lands. Times out at 45s.
+          The report lands and the Displacement view paints. Times out at 45s if the fleet is
+          briefly unavailable.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACCESS -->
+  <section>
+    <h2 class="label-fg mb-3">ACCESS</h2>
+    <div class="border border-line2 bg-panel">
+      <div class="px-4 py-3 mono text-[12px] text-fg leading-relaxed space-y-2">
+        <p>
+          Anyone can browse the public index of recent reports for free. Looking up a report that
+          already exists is free. <span class="text-amber">Running a fresh scan</span> &mdash; one
+          where the result isn&apos;t already on file &mdash; requires an access code with at
+          least one scrape remaining.
+        </p>
+        <p class="text-mute">
+          Press <kbd>Ctrl</kbd>+<kbd>K</kbd> on any page to enter or change your code. The
+          credits indicator next to the search input tells you how many scrapes you have left.
+          See <a href="./asc.html" class="text-amber hover:underline">ASC</a> for how codes work
+          and how to get one.
         </p>
       </div>
     </div>
@@ -145,21 +171,33 @@
         <div>MESSAGE</div><div>WHAT IT MEANS</div>
       </div>
       <ul class="divide-y divide-line2 mono text-[12px]">
-        <li class="px-4 py-2.5 grid grid-cols-[200px_1fr] items-center">
+        <li class="px-4 py-2.5 grid grid-cols-[220px_1fr] items-center">
           <div class="text-red">ERR: DISPATCH FAILED</div>
-          <div class="text-fg">The Edge Function returned non-2xx or wasn't reachable. Likely a transient network issue. Retry.</div>
+          <div class="text-fg">The request couldn&apos;t reach the gateway. Usually a transient network blip &mdash; try again.</div>
         </li>
-        <li class="px-4 py-2.5 grid grid-cols-[200px_1fr] items-center">
+        <li class="px-4 py-2.5 grid grid-cols-[220px_1fr] items-center">
           <div class="text-red">ERR: NODE TIMEOUT</div>
-          <div class="text-fg">No fleet worker posted a result within 45s. Could be queue backpressure, soft shadowban, or fleet idle. Try again later.</div>
+          <div class="text-fg">No fleet worker posted a result within 45s. The fleet may be busy or briefly offline. Try again in a few minutes.</div>
         </li>
-        <li class="px-4 py-2.5 grid grid-cols-[200px_1fr] items-center">
+        <li class="px-4 py-2.5 grid grid-cols-[220px_1fr] items-center">
+          <div class="text-red">A FRESH SCRAPE REQUIRES AN ACCESS CODE</div>
+          <div class="text-fg">There&apos;s no recent cached report for this keyword and you have no code stored. Press <kbd>Ctrl</kbd>+<kbd>K</kbd> to enter one.</div>
+        </li>
+        <li class="px-4 py-2.5 grid grid-cols-[220px_1fr] items-center">
+          <div class="text-red">ERR: CODE INVALID / NOT_FOUND</div>
+          <div class="text-fg">The code you entered isn&apos;t recognized. Check it for typos or use a different one.</div>
+        </li>
+        <li class="px-4 py-2.5 grid grid-cols-[220px_1fr] items-center">
+          <div class="text-red">ERR: CODE DEPLETED</div>
+          <div class="text-fg">This code has no scrapes remaining. Cache lookups still work; fresh scans need a code with available balance.</div>
+        </li>
+        <li class="px-4 py-2.5 grid grid-cols-[220px_1fr] items-center">
           <div class="text-mute">CACHE HIT</div>
-          <div class="text-fg">Not an error — recent report served from the public cache. No code burned, no fleet activity.</div>
+          <div class="text-fg">A recent report was already on file &mdash; no scrape was consumed and no fleet work was needed.</div>
         </li>
-        <li class="px-4 py-2.5 grid grid-cols-[200px_1fr] items-center">
-          <div class="text-amber">CODE BURNED</div>
-          <div class="text-fg">Not an error — your code's balance just decremented by 1 to dispatch this scrape.</div>
+        <li class="px-4 py-2.5 grid grid-cols-[220px_1fr] items-center">
+          <div class="text-amber">SCRAPE STARTED</div>
+          <div class="text-fg">A fresh scan was dispatched. Your code&apos;s balance went down by one for the dispatch.</div>
         </li>
       </ul>
     </div>
@@ -172,30 +210,31 @@
       <div class="bg-bg p-4">
         <div class="label mb-2">DRIFT</div>
         <p class="mono text-[11px] text-fg leading-relaxed">
-          Composite distance between Enclosure and Baseline. Higher = the algorithm is showing you a more
-          divergent view from the lexical/organic baseline. Bands: <span class="text-amber">≥85%</span> CRITICAL,
-          70&ndash;85 ELEVATED, 50&ndash;70 MODERATE, &lt;50 LOW.
+          A single number summarising how far the algorithmic view of this keyword has moved
+          from the unfiltered view. Higher means the gap is wider. Bands:
+          <span class="text-amber">&ge;85%</span> CRITICAL, 70&ndash;85 ELEVATED,
+          50&ndash;70 MODERATE, &lt;50 LOW.
         </p>
       </div>
       <div class="bg-bg p-4">
         <div class="label mb-2">CONFIDENCE</div>
         <p class="mono text-[11px] text-fg leading-relaxed">
-          How thick the underlying corpora are. Low confidence ({"<"}30%) usually means at least one source
-          got captcha-walled or returned thin results — treat the drift number with skepticism.
+          How much material the report had to work with. When confidence is low, at least one
+          source returned thin or partial data &mdash; treat the drift number with caution.
         </p>
       </div>
       <div class="bg-bg p-4">
         <div class="label mb-2">SUBSIDY (+)</div>
         <p class="mono text-[11px] text-fg leading-relaxed">
-          Words the algorithm injected. High weight in Enclosure, near-zero in Baseline. These are the
-          terms the SERP wants you thinking about.
+          Terms the algorithm pushes forward for this keyword that don&apos;t appear in the
+          unfiltered view at the same rate. The vocabulary the front page wants you using.
         </p>
       </div>
       <div class="bg-bg p-4">
         <div class="label mb-2">SUPPRESSED (&minus;)</div>
         <p class="mono text-[11px] text-fg leading-relaxed">
-          Words the algorithm scrubbed. High weight in Baseline, near-zero in Enclosure. These are the
-          terms organic users use that the SERP filtered out.
+          Terms that show up in the unfiltered view but are quiet or absent in what the
+          algorithm presents. The vocabulary that didn&apos;t make it through.
         </p>
       </div>
     </div>
