@@ -39,7 +39,12 @@ window.DM_SUPABASE_ANON_KEY = DM_SUPABASE_ANON_KEY;
 
 window.DM = (() => {
   const POLL_INTERVAL_MS = 3000;
-  const POLL_TIMEOUT_MS  = 45000;
+  // Workers wake on a ~5-minute Acurast heartbeat, so worst-case
+  // submit-to-result is ~5min worker claim + ~60s scan + ~5s write.
+  // 6 minutes covers the worst case without leaving the user waiting
+  // longer than is honest. If the deployment cadence tightens, this
+  // can drop accordingly.
+  const POLL_TIMEOUT_MS  = 360000;
   const CACHE_WINDOW_HRS = 1;
   const CODE_STORAGE_KEY = 'dm_code';
 
@@ -754,15 +759,28 @@ window.DM = (() => {
       logLine('JOB ACCEPTED &middot; awaiting worker&hellip;');
     }
 
-    // 3. Poll for result. 45s ceiling; silent timeout = node timeout.
+    // 3. Poll for result. ~6min ceiling tracks the worker rotation cadence.
     const start = Date.now();
-    let lastSeenLog = 0;
+    let lastTickLog = 0;
+    let postedRotationHint = false;
+    let postedScanHint = false;
     while (Date.now() - start < POLL_TIMEOUT_MS) {
       await sleep(POLL_INTERVAL_MS);
       const elapsed = (Date.now() - start) / 1000;
-      if (elapsed - lastSeenLog >= 9) {
-        logLine(`POLL T+${elapsed.toFixed(1)}s &middot; no response yet`);
-        lastSeenLog = elapsed;
+      // One-time hints to keep the wait honest. Workers rotate roughly
+      // every 5 minutes, so anything under that is normal queue time.
+      if (!postedRotationHint && elapsed >= 60) {
+        logLine('FLEET ROTATES ON A ~5 MINUTE CADENCE &middot; sit tight', 'text-mute');
+        postedRotationHint = true;
+      }
+      if (!postedScanHint && elapsed >= 180) {
+        logLine('SCAN LIKELY IN PROGRESS &middot; report posts when complete', 'text-mute');
+        postedScanHint = true;
+      }
+      // Steady tick every 30s so the log doesn't go silent.
+      if (elapsed - lastTickLog >= 30) {
+        logLine(`POLL T+${elapsed.toFixed(0)}s &middot; awaiting fleet response`);
+        lastTickLog = elapsed;
       }
       try {
         const payload = await pollOnce(requestId);
@@ -787,9 +805,11 @@ window.DM = (() => {
       } catch (_) { /* keep polling */ }
     }
 
+    const minutes = Math.round(POLL_TIMEOUT_MS / 60000);
     logLine('ERR: NODE TIMEOUT', 'text-red');
-    logLine('       no fleet response within 45s', 'text-red');
-    logLine('       try again in a few minutes', 'text-mute');
+    logLine(`       no fleet response within ${minutes} minutes`, 'text-red');
+    logLine('       the report may still land after this; re-submit the same', 'text-mute');
+    logLine('       query in a moment to pull it from cache if it does', 'text-mute');
   }
 
   // ---------- init --------------------------------------------------------
