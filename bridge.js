@@ -32,6 +32,9 @@ const DM_SUPABASE_URL       = 'https://ojrcarvjtzsynchcexmb.supabase.co';
 const DM_SUPABASE_ANON_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qcmNhcnZqdHpzeW5jaGNleG1iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwMzM5OTYsImV4cCI6MjA5MzYwOTk5Nn0.yxNIgPihQaZH7VNYx7siOpIUIskzh0z6pE1Quc7tguA';
 const DM_FUNCTION_URL       = `${DM_SUPABASE_URL}/functions/v1/submit`;
 const DM_TURNSTILE_SITEKEY  = '0x4AAAAAADJ5qI9fGwLTfIzf';
+// Expose Supabase config to other pages (browse.html, asc.html, etc.)
+window.DM_SUPABASE_URL      = DM_SUPABASE_URL;
+window.DM_SUPABASE_ANON_KEY = DM_SUPABASE_ANON_KEY;
 // ----------------------------------------------------------------------------
 
 window.DM = (() => {
@@ -73,6 +76,190 @@ window.DM = (() => {
       if (v) localStorage.setItem(CODE_STORAGE_KEY, v);
       else   localStorage.removeItem(CODE_STORAGE_KEY);
     } catch (_) { /* private mode etc */ }
+    applyIdentity();
+  }
+
+  // ---------- identity (top-bar) -----------------------------------------
+  // Identity is derived purely from the stored code prefix. No accounts,
+  // no profiles, no Google. If a code is stored, the identity is the code
+  // itself (lowercased prefix) styled like a URI scheme. If no code,
+  // it's just `anon`.
+  function computeIdentity() {
+    const stored = readStoredCode();
+    if (!stored) return 'anon';
+    const prefix = (stored.match(/^[A-Z]{3}/) || [''])[0].toLowerCase();
+    const tail = stored.slice(4).toLowerCase();
+    return prefix ? `${prefix}://${tail || '???'}` : 'anon';
+  }
+
+  function applyIdentity() {
+    const el = document.getElementById('dm-identity');
+    if (!el) return;
+    el.textContent = computeIdentity();
+  }
+
+  // ---------- footer stats (real numbers from Supabase) ------------------
+  async function fetchStats() {
+    // Three small REST queries, run in parallel. PostgREST exposes count
+    // via the Prefer: count=exact header.
+    const headers = {
+      ...restHeaders(),
+      Prefer: 'count=exact',
+      Range: '0-0',  // we only want the count, not the rows
+    };
+    const dayAgo = new Date(Date.now() - 24*3600*1000).toISOString();
+
+    async function getCount(filter = '') {
+      const url = `${DM_SUPABASE_URL}/rest/v1/reports?select=id${filter}`;
+      const r = await fetch(url, { headers });
+      if (!r.ok) return null;
+      // Total count is in Content-Range: "0-0/N"
+      const cr = r.headers.get('content-range') || '0-0/0';
+      const total = parseInt(cr.split('/')[1] || '0', 10);
+      return Number.isFinite(total) ? total : 0;
+    }
+
+    async function getLatest() {
+      const url = `${DM_SUPABASE_URL}/rest/v1/reports`
+                + `?select=created_at,payload`
+                + `&order=created_at.desc&limit=1`;
+      const r = await fetch(url, { headers: restHeaders() });
+      if (!r.ok) return null;
+      const rows = await r.json();
+      return rows[0] || null;
+    }
+
+    async function getMedianDrift() {
+      // Pull a sample of recent drift values and compute median client-side.
+      // Cheaper than a server-side percentile and accurate enough.
+      const url = `${DM_SUPABASE_URL}/rest/v1/reports`
+                + `?select=payload->drift::float`
+                + `&order=created_at.desc&limit=200`;
+      // ^ PostgREST cast syntax not always supported; fall back to extracting client-side
+      const fallback = `${DM_SUPABASE_URL}/rest/v1/reports`
+                     + `?select=payload&order=created_at.desc&limit=200`;
+      let r = await fetch(url, { headers: restHeaders() });
+      if (!r.ok) r = await fetch(fallback, { headers: restHeaders() });
+      if (!r.ok) return null;
+      const rows = await r.json();
+      const drifts = rows
+        .map(row => {
+          const v = row.drift !== undefined ? row.drift : (row.payload && row.payload.drift);
+          return typeof v === 'number' ? v : parseFloat(v);
+        })
+        .filter(n => Number.isFinite(n))
+        .sort((a, b) => a - b);
+      if (!drifts.length) return null;
+      const mid = Math.floor(drifts.length / 2);
+      return drifts.length % 2 ? drifts[mid] : (drifts[mid-1] + drifts[mid]) / 2;
+    }
+
+    try {
+      const [total, last24h, latest, median] = await Promise.all([
+        getCount(),
+        getCount(`&created_at=gte.${encodeURIComponent(dayAgo)}`),
+        getLatest(),
+        getMedianDrift(),
+      ]);
+      return { total, last24h, latest, median };
+    } catch (_e) {
+      return null;
+    }
+  }
+
+  function applyStats(stats) {
+    const set = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = val;
+    };
+    if (!stats) return;
+    if (stats.total !== null && stats.total !== undefined) {
+      set('stat-corpora', stats.total.toLocaleString());
+    }
+    if (stats.last24h !== null && stats.last24h !== undefined) {
+      set('stat-queries', stats.last24h.toLocaleString());
+    }
+    if (typeof stats.median === 'number') {
+      set('stat-median-drift',
+        `${(stats.median * 100).toFixed(1)}<span class="text-mute text-[14px]">%</span>`);
+    }
+    if (stats.latest && stats.latest.created_at) {
+      const d = new Date(stats.latest.created_at);
+      const z = (n) => String(n).padStart(2, '0');
+      set('stat-last-refresh',
+        `${d.getUTCFullYear()}&minus;${z(d.getUTCMonth()+1)}&minus;${z(d.getUTCDate())} ${z(d.getUTCHours())}:${z(d.getUTCMinutes())}Z`);
+    }
+  }
+
+  // ---------- session history (localStorage, per-device) -----------------
+  const HISTORY_KEY = 'dm_history';
+  const HISTORY_MAX = 50;
+
+  function readHistory() {
+    try {
+      const raw = localStorage.getItem(HISTORY_KEY);
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch (_) { return []; }
+  }
+
+  function writeHistory(arr) {
+    try {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(arr.slice(0, HISTORY_MAX)));
+    } catch (_) { /* private mode etc */ }
+  }
+
+  function appendHistory(entry) {
+    const list = readHistory();
+    // Dedupe by request_id; if same id already present, replace it.
+    const i = list.findIndex(x => x.request_id === entry.request_id);
+    if (i >= 0) list.splice(i, 1);
+    list.unshift(entry);
+    writeHistory(list);
+    renderHistory();
+  }
+
+  function clearHistory() {
+    try { localStorage.removeItem(HISTORY_KEY); } catch (_) {}
+    renderHistory();
+  }
+
+  function relativeTime(iso) {
+    const then = new Date(iso).getTime();
+    const ms = Date.now() - then;
+    if (ms < 60_000)        return `${Math.floor(ms/1000)}s ago`;
+    if (ms < 3_600_000)     return `${Math.floor(ms/60_000)}m ago`;
+    if (ms < 86_400_000)    return `${Math.floor(ms/3_600_000)}h ago`;
+    return `${Math.floor(ms/86_400_000)}d ago`;
+  }
+
+  function renderHistory() {
+    const list = readHistory();
+    const wrap = document.getElementById('state-history');
+    const ul = document.getElementById('history-list');
+    if (!wrap || !ul) return;
+    if (!list.length) { wrap.classList.add('hidden'); ul.innerHTML = ''; return; }
+    wrap.classList.remove('hidden');
+    ul.innerHTML = '';
+    for (const e of list) {
+      const li = document.createElement('li');
+      li.className = 'row px-4 py-2.5 grid grid-cols-[1fr_120px_80px_120px] items-center mono text-[12px] cursor-pointer';
+      const driftPct = (typeof e.drift === 'number') ? `${(e.drift*100).toFixed(1)}%` : '—';
+      const conf = (typeof e.confidence === 'number') ? `${(e.confidence*100).toFixed(0)}%` : '—';
+      li.innerHTML = `
+        <div class="truncate text-fg">${e.keyword}</div>
+        <div class="text-right tabular-nums text-amber">${driftPct}</div>
+        <div class="text-right tabular-nums text-mute">${conf}</div>
+        <div class="text-right tabular-nums text-mute">${relativeTime(e.timestamp)}</div>
+      `;
+      li.addEventListener('click', () => {
+        if (e.payload) {
+          renderReport(e.keyword, e.payload);
+          show('report');
+        }
+      });
+      ul.appendChild(li);
+    }
   }
 
   // ---------- Turnstile (invisible) ---------------------------------------
@@ -363,7 +550,8 @@ window.DM = (() => {
 
     const requestId = uuid();
     resetCalcUI(keyword, requestId.slice(0, 8).toUpperCase());
-    show('calc');                           // existing function in index.html
+    document.body.classList.add('has-output');     // compact the search hero
+    show('calc');                                  // existing function in index.html
 
     logLine('RESOLVING NODE ASSIGNMENT…');
 
@@ -374,6 +562,15 @@ window.DM = (() => {
       await sleep(450);
       renderReport(keyword, cached);
       show('report');
+      appendHistory({
+        request_id: requestId,
+        keyword,
+        drift:      cached.drift,
+        confidence: cached.confidence,
+        timestamp:  new Date().toISOString(),
+        source:     'cache',
+        payload:    cached,
+      });
       return;
     }
 
@@ -413,6 +610,17 @@ window.DM = (() => {
           await sleep(280);
           renderReport(keyword, payload);
           show('report');
+          appendHistory({
+            request_id: requestId,
+            keyword,
+            drift:      payload.drift,
+            confidence: payload.confidence,
+            timestamp:  new Date().toISOString(),
+            source:     stored ? 'coded' : 'open',
+            payload,
+          });
+          // Refresh footer stats so the new report counts immediately
+          fetchStats().then(applyStats);
           return;
         }
       } catch (_) { /* keep polling */ }
@@ -427,6 +635,21 @@ window.DM = (() => {
   function init() {
     ensureCodePanel();
     renderBadge();
+    applyIdentity();                        // anon or asl://founders-001 etc.
+    renderHistory();                        // reveal history if localStorage has rows
+    // Wire the [CLEAR] button on the history panel
+    const clearBtn = document.getElementById('btn-history-clear');
+    if (clearBtn) clearBtn.addEventListener('click', clearHistory);
+
+    // Fetch and populate real footer stats from Supabase (non-blocking)
+    fetchStats().then(applyStats);
+
+    // If returning to a session that had output before, leave the search
+    // hero compact and surface the most recent history entry.
+    if (readHistory().length > 0) {
+      document.body.classList.add('has-output');
+    }
+
     // Fire-and-forget: warm up Turnstile so the first submit isn't slow.
     mountTurnstile();
     // Hook into the existing UI: replace runQuery with our remote version.
@@ -442,5 +665,29 @@ window.DM = (() => {
     init();
   }
 
-  return { runRemote, mountTurnstile, readStoredCode, writeStoredCode };
+  return {
+    // Core runtime (REPORT page)
+    runRemote, mountTurnstile,
+    // Identity / code management (REPORT, ASC pages)
+    readStoredCode, writeStoredCode, applyIdentity, computeIdentity,
+    // Stats + history (REPORT, INDEX pages)
+    fetchStats, applyStats,
+    readHistory, writeHistory, appendHistory, clearHistory, renderHistory,
+    // Init for pages that load bridge.js but don't have a search input
+    initIfNeeded: () => {
+      if (!document.getElementById('qinput')) {
+        // Lightweight init for non-REPORT pages: identity + stats only
+        applyIdentity();
+        fetchStats().then(applyStats);
+      }
+    },
+  };
 })();
+
+// Auto-run lightweight init on pages that aren't the main REPORT page,
+// so they get identity + footer stats without needing the full search wiring.
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => window.DM.initIfNeeded?.());
+} else {
+  window.DM.initIfNeeded?.();
+}

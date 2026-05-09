@@ -1,97 +1,50 @@
 {
-  "_NOTE_TO_OPERATOR": [
-    "This manifest is a structural skeleton. The Acurast manifest schema",
-    "and CLI commands change between releases. Before deploying, verify",
-    "every field name in this file against the current docs at:",
-    "  https://docs.acurast.com",
-    "",
-    "Specifically check:",
-    "  - the top-level field names (some versions use 'job', others",
-    "    flatten the structure)",
-    "  - the network allowlist field name and whether it accepts",
-    "    bare hostnames or full URL prefixes",
-    "  - the processor selection mechanism (by ownership, by",
-    "    attestation, by deviceId list, by reputation tier)",
-    "  - the schedule format (interval vs cron vs one-shot)",
-    "  - the secret declaration syntax",
-    "",
-    "Once verified, delete this _NOTE_TO_OPERATOR block — comments are",
-    "not part of the JSON spec and some parsers reject them."
-  ],
-
-  "name":        "driftmetrics-fleet-worker",
-  "version":    "0.1.0",
-  "description": "DriftMetrics Acurast worker — claims a job from the Supabase queue, runs the siphon scan inside the TEE, posts the displacement report back, deletes the queue row.",
-
-  "entry": "dist/job.bundle.js",
-  "runtime": {
-    "type":    "deno",
-    "version": "1.x"
-  },
-
-  "schedule": {
-    "type":             "interval",
-    "interval_seconds": 30,
-    "max_executions":   null,
-    "_comment":         "30s × 30+ processors ≈ ~1 claim attempt per second across the fleet. Most return null (no work). claim_next_job uses FOR UPDATE SKIP LOCKED so concurrent claims are safe."
-  },
-
-  "requirements": {
-    "memory_mb":       256,
-    "cpu_millicores":  500,
-    "timeout_seconds": 240,
-    "storage_mb":      0,
-    "_comment":        "TEE has no persistent storage. siphon doesn't need any."
-  },
-
-  "network": {
-    "egress_allowlist": [
-      "www.bing.com",
-      "search.yahoo.com",
-      "html.duckduckgo.com",
-      "duckduckgo.com",
-      "en.wikipedia.org",
-      "ojrcarvjtzsynchcexmb.supabase.co"
-    ],
-    "_comment_egress": "Only these hosts are reachable from inside the TEE. Adding a host requires re-deploying. The Supabase host is YOUR project URL — replace if you ever migrate.",
-
-    "tls_only": true
-  },
-
-  "secrets": [
-    {
-      "name":       "SUPABASE_SERVICE_KEY",
-      "_comment":   "service_role JWT. Set via: acurast secrets set SUPABASE_SERVICE_KEY <key>. Decrypted only inside the TEE; processor operator cannot read it."
+  "projects": {
+    "driftmetrics-fleet-worker": {
+      "projectName": "driftmetrics-fleet-worker",
+      "fileUrl": "dist/job.bundle.js",
+      "network": "mainnet",
+      "runtime": "NodeJSWithBundle",
+      "assignmentStrategy": {
+        "type": "Single"
+      },
+      "execution": {
+        "type": "interval",
+        "intervalInMs": 300000,
+        "numberOfExecutions": 60,
+        "maxExecutionTimeInMs": 270000
+      },
+      "maxAllowedStartDelayInMs": 10000,
+      "numberOfReplicas": 5,
+      "processorWhitelist": [
+        "5E1y8PQhZMd3XwrD6etrWn3YaVdPkGR34q4683hQ5LWbj5hq",
+        "5CVqtsMSjPDvk2ratf5Rddwe2N2eWpKeAsTHxteLx6KQhLUP",
+        "5E5A967y5h2tDwZMKZatYo1CkcY54NVNgJXYF7GWxyfVaJtK",
+        "5DmPSX2Msm9VhyJuC83ZZmZnZEfM4UTERQ4jjQPK49Dx39CL",
+        "5H6ZVTwTQMgdfnvfTh84fPxEraHCGj1a5JabwAZ1E4psDu6M",
+        "5Gcg52ig7RreEUCnoQHH4tj4f79eMNVGvmeQc5B4tSc8mfsU",
+        "5HjHMAyVUaPgFvh15G9QLD3tXyayYzasdUmnzmnCWn3ZHEb4",
+        "5C7pbqnCLFYUfuqecGGuv5hQYexGTMKjusUNWB4iVkrEoBTo",
+        "5Fs95s6Sym9dfGHWGt3x7XRAkV74G3bHUGSNyJSm7RJAaJX2",
+        "5D91zETYaZjXyRQPpKcQAKQvnDT7EYVejx1rL9xXfSHMYtUA",
+        "5Ha45hRmhM5bUEriaSqFWB64yDeG2WRPXaXi6QorMjCpuoaW",
+        "5F3WNjCnDzDeKyWGp5nrVEtGHrSaGffBF8Zg1YCtCaH2w1qV"
+      ],
+      "minProcessorReputation": 0,
+      "maxCostPerExecution": 10000000000,
+      "usageLimit": {
+        "maxMemory": 0,
+        "maxNetworkRequests": 30,
+        "maxStorage": 0
+      },
+      "includeEnvironmentVariables": [
+        "SUPABASE_SERVICE_KEY",
+        "SUPABASE_URL",
+        "SIPHON_TIMEOUT_MS"
+      ],
+      "enableDevtools": true,
+      "onlyAttestedDevices": false,
+      "mutability": "Immutable"
     }
-  ],
-
-  "env": {
-    "SUPABASE_URL":      "https://ojrcarvjtzsynchcexmb.supabase.co",
-    "SIPHON_TIMEOUT_MS": "180000"
-  },
-
-  "processors": {
-    "selection": "by_owner",
-    "owner_address": "REPLACE_WITH_YOUR_ACURAST_WALLET_ADDRESS",
-    "_comment_selection": [
-      "Three selection modes you'll see in Acurast docs (names may vary):",
-      "  by_owner       — only your own processors (your wallet owns them).",
-      "                    This is what your 30+ Root Image fleet wants.",
-      "  by_attestation — any processor with a verified TEE attestation.",
-      "                    Costs $ACU per execution; wider distribution.",
-      "  by_device_ids  — explicit list of processor deviceIds. Most",
-      "                    restrictive. Use if you need to pin to a subset."
-    ]
-  },
-
-  "reward": {
-    "amount_acu": "0",
-    "per":        "execution",
-    "_comment":   "Owned-fleet jobs typically have zero reward — you're paying yourself. Set non-zero only if you want to incentivize external processors via 'by_attestation' selection."
-  },
-
-  "consumers": {
-    "fund_address": "REPLACE_WITH_YOUR_ACURAST_WALLET_ADDRESS",
-    "_comment":     "Even with zero reward, Acurast may require a consumer/funding address declared. Verify."
   }
 }

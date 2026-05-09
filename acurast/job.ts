@@ -1,5 +1,5 @@
 // ============================================================================
-// job.ts — DriftMetrics Acurast TEE worker entry
+// job.ts — DriftMetrics Acurast TEE worker entry  (NodeJSWithBundle runtime)
 // ----------------------------------------------------------------------------
 // Run-once invocation pattern. Acurast's scheduler invokes this entry point
 // on each processor on a regular interval (configured in acurast.json).
@@ -12,13 +12,15 @@
 //
 // If no row was available, exits cleanly with no work performed.
 //
-// The TEE decrypts SUPABASE_SERVICE_KEY only inside the enclave. The
-// processor operator cannot read it. Acurast's attestation guarantees this.
+// RUNTIME NOTE:
+//   Acurast's TEE runs NodeJSWithBundle, NOT Deno. Environment variables are
+//   exposed via the global `_STD_.env` object, NOT `Deno.env.get()` or
+//   `process.env`. The fallback chain below also checks process.env so this
+//   file can be sanity-tested locally with plain Node.
 //
-// Required environment (set via Acurast secrets):
-//   SUPABASE_SERVICE_KEY   service_role JWT
-//
-// Required environment (set via Acurast env, non-secret):
+// Required environment (declared in acurast.json's includeEnvironmentVariables,
+//   value supplied via .env at deploy time):
+//   SUPABASE_SERVICE_KEY   service_role JWT  (treated as secret by CLI)
 //   SUPABASE_URL           https://<project>.supabase.co
 //
 // Optional:
@@ -29,20 +31,43 @@
 import { runScan } from "./siphon.ts";
 
 // ----------------------------------------------------------------------------
+// ENV ACCESS — Acurast NodeJSWithBundle exposes vars via _STD_.env
+// ----------------------------------------------------------------------------
+
+declare const _STD_: { env: Record<string, string | undefined> } | undefined;
+declare const process: { env: Record<string, string | undefined> } | undefined;
+
+function getEnv(): Record<string, string | undefined> {
+  // Acurast TEE
+  // deno-lint-ignore no-explicit-any
+  const std = (globalThis as any)._STD_;
+  if (std && std.env) return std.env;
+  // Local Node (for sanity tests via `node dist/job.bundle.js`)
+  // deno-lint-ignore no-explicit-any
+  const proc = (globalThis as any).process;
+  if (proc && proc.env) return proc.env;
+  return {};
+}
+
+const env = getEnv();
+
+// ----------------------------------------------------------------------------
 // CONFIG
 // ----------------------------------------------------------------------------
 
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-const SERVICE_KEY  = Deno.env.get("SUPABASE_SERVICE_KEY");
-const WORKER_ID    = Deno.env.get("WORKER_ID") ||
-  `acurast-${crypto.randomUUID().slice(0, 8)}`;
-const SIPHON_TIMEOUT_MS = Number(
-  Deno.env.get("SIPHON_TIMEOUT_MS") || "180000",
-);
+const SUPABASE_URL = env.SUPABASE_URL;
+const SERVICE_KEY  = env.SUPABASE_SERVICE_KEY;
+const WORKER_ID    = env.WORKER_ID ||
+  `acurast-${(globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)).slice(0, 8)}`;
+const SIPHON_TIMEOUT_MS = Number(env.SIPHON_TIMEOUT_MS || "180000");
 
 if (!SUPABASE_URL || !SERVICE_KEY) {
-  console.error("FATAL: SUPABASE_URL and SUPABASE_SERVICE_KEY are required");
-  Deno.exit(1);
+  // Throwing surfaces in Acurast devtools logs and stops the bundle. Cleaner
+  // than process.exit / Deno.exit which may not be available in the TEE.
+  throw new Error(
+    "FATAL: SUPABASE_URL and SUPABASE_SERVICE_KEY must be set " +
+    "(check acurast.json includeEnvironmentVariables and .env)",
+  );
 }
 
 const URL_BASE = SUPABASE_URL.replace(/\/+$/, "");
@@ -63,7 +88,7 @@ function log(msg: string): void {
 }
 
 async function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
-  let timer: number | undefined;
+  let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<never>((_resolve, reject) => {
     timer = setTimeout(() => reject(new Error(`${label}: timeout after ${ms}ms`)), ms);
   });
@@ -83,7 +108,6 @@ interface JobRow {
   request_id: string;
   keyword: string;
   status: string;
-  // ... other columns we don't care about here
 }
 
 async function claim(): Promise<JobRow | null> {
@@ -178,7 +202,7 @@ async function runOnce(): Promise<number> {
   log(`claimed ${jobShort} keyword=${JSON.stringify(job.keyword)}`);
 
   // 2. Run siphon
-  const t0 = performance.now();
+  const t0 = (typeof performance !== "undefined" ? performance.now() : Date.now());
   let payload: unknown;
   try {
     payload = await withTimeout(runScan(job.keyword), SIPHON_TIMEOUT_MS, "siphon");
@@ -188,7 +212,8 @@ async function runOnce(): Promise<number> {
     await markFailed(job.id);
     return 2;
   }
-  const dur = ((performance.now() - t0) / 1000).toFixed(1);
+  const tNow = (typeof performance !== "undefined" ? performance.now() : Date.now());
+  const dur = ((tNow - t0) / 1000).toFixed(1);
 
   // 3. Publish + cleanup
   try {
@@ -210,15 +235,26 @@ async function runOnce(): Promise<number> {
 }
 
 // ----------------------------------------------------------------------------
-// ENTRY
+// ENTRY — called on every Acurast invocation
 // ----------------------------------------------------------------------------
 
-if (import.meta.main) {
-  const code = await runOnce();
-  Deno.exit(code);
-}
+// Acurast's NodeJSWithBundle runtime loads the bundle via `require()`, which
+// cannot evaluate an ESM graph that has top-level await. We schedule runOnce
+// as a fire-and-forget promise; Node keeps the process alive while the async
+// work is pending, then exits when the chain resolves or rejects. Any thrown
+// failure surfaces as an "ExecutionFailure" event in Acurast devtools.
+runOnce()
+  .then((code) => {
+    if (code !== 0) {
+      throw new Error(`runOnce returned non-zero exit code: ${code}`);
+    }
+  })
+  .catch((e) => {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error(`[fatal] runOnce: ${msg}`);
+    throw e;
+  });
 
-// Also exported so the bundler keeps it accessible if Acurast invokes a
-// named export instead of running the top-level. Verify against current
-// Acurast runtime — most versions run main, some require a default export.
+// Default export kept in case Acurast invokes a named entry point on some
+// runtime versions. Harmless if unused.
 export default runOnce;

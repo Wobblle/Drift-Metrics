@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>DRIFTMETRICS // ASC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="./bridge.js"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          bg:'#0A0A0A', panel:'#0F0F0F', line:'#1C1C1C', line2:'#262626',
+          fg:'#E5E5E5', mute:'#6B6B6B', dim:'#3A3A3A',
+          amber:'#FFB000', phos:'#33FF7A', red:'#FF3B3B',
+        },
+        fontFamily: { sans:['Inter','system-ui','sans-serif'], mono:['JetBrains Mono','Menlo','monospace'] }
+      }
+    }
+  }
+</script>
+<style>
+  html,body { background:#0A0A0A; color:#E5E5E5; }
+  body { font-family: 'Inter', system-ui, sans-serif; }
+  .mono { font-family: 'JetBrains Mono', Menlo, monospace; }
+  .label { letter-spacing:0.14em; text-transform:uppercase; font-size:10px; color:#6B6B6B; font-weight:500; }
+  .label-fg { letter-spacing:0.14em; text-transform:uppercase; font-size:10px; color:#E5E5E5; font-weight:600; }
+  ::selection { background:#FFB000; color:#0A0A0A; }
+  input:focus { outline: none; }
+  .ticks > i { position:absolute; width:8px; height:8px; border-color:#3A3A3A; border-style:solid; border-width:0; }
+  .ticks > i.tl { top:-1px; left:-1px; border-top-width:1px; border-left-width:1px; }
+  .ticks > i.tr { top:-1px; right:-1px; border-top-width:1px; border-right-width:1px; }
+  .ticks > i.bl { bottom:-1px; left:-1px; border-bottom-width:1px; border-left-width:1px; }
+  .ticks > i.br { bottom:-1px; right:-1px; border-bottom-width:1px; border-right-width:1px; }
+  .prose p { font-size: 14px; line-height: 1.7; color: #C4C4C4; max-width: 720px; }
+  .prose h2 { letter-spacing: 0.14em; text-transform: uppercase; font-size: 11px; color: #E5E5E5; font-weight: 600; margin-top: 3rem; margin-bottom: 0.75rem; }
+  .prose code { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #FFB000; background: #0F0F0F; padding: 1px 6px; border: 1px solid #1C1C1C; }
+</style>
+</head>
+<body class="min-h-screen bg-bg text-fg antialiased">
+
+<header class="border-b border-line">
+  <div class="max-w-[1400px] mx-auto px-6 h-11 flex items-center justify-between">
+    <div class="flex items-center gap-6">
+      <div class="flex items-center gap-2">
+        <div class="w-2.5 h-2.5 bg-amber"></div>
+        <a href="./index.html" class="mono text-[12px] tracking-[0.18em] font-bold">DRIFTMETRICS</a>
+        <span class="mono text-[10px] text-mute">v0.1.0&minus;alpha</span>
+      </div>
+      <nav class="hidden md:flex items-center gap-5 mono text-[11px] text-mute">
+        <a href="./index.html"   class="hover:text-fg cursor-pointer">REPORT</a>
+        <a href="./browse.html"  class="hover:text-fg cursor-pointer">INDEX</a>
+        <a href="./corpora.html" class="hover:text-fg cursor-pointer">CORPORA</a>
+        <a href="./asc.html"     class="text-fg">ASC</a>
+        <a href="./docs.html"    class="hover:text-fg cursor-pointer">DOCS</a>
+      </nav>
+    </div>
+    <div class="flex items-center gap-5 mono text-[11px] text-mute">
+      <span><span class="text-fg">acurast.fleet</span> &middot; node --</span>
+      <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 bg-phos"></span><span>OPERATIONAL</span></span>
+      <span id="utc-clock">--:--:-- UTC</span>
+      <span class="text-fg" id="dm-identity">anon</span>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-[1400px] mx-auto px-6 py-12 space-y-10">
+
+  <section>
+    <div class="mono text-[11px] text-mute mb-6">
+      <span class="text-amber">[</span> ASC <span class="text-fg">04&minus;CODES</span> <span class="text-amber">]</span>
+      <span class="mx-2">&middot;</span> ASLEEPIUS STANDARDIZED CODES
+    </div>
+    <h1 class="text-[32px] md:text-[44px] leading-[1.0] tracking-tight font-semibold max-w-[820px] mb-4">
+      A code is the account.
+      <span class="text-mute block mt-2">No email, no password, no profile.</span>
+    </h1>
+    <p class="mono text-[12px] text-mute max-w-[680px] mt-5">
+      Asleepius products use a shared code grammar. A code is a small sharable string that grants
+      access. You hold your codes; we don&apos;t track who you are. If you lose them, that&apos;s your
+      problem. If a friend uses one, they get the same effect you would.
+    </p>
+  </section>
+
+  <!-- CURRENT CODE PANEL -->
+  <section class="border border-line2 bg-panel relative ticks">
+    <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
+
+    <div class="px-4 h-8 border-b border-line2 mono text-[10px] text-mute flex items-center justify-between">
+      <span class="text-amber">YOUR CODE</span>
+      <span>stored locally on this device</span>
+    </div>
+
+    <div class="p-5 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-end">
+      <div>
+        <div class="label mb-2">CURRENT</div>
+        <div class="flex items-center gap-3">
+          <span class="mono text-amber text-[18px]" id="asc-current">NONE</span>
+          <span class="mono text-[10px] text-mute" id="asc-current-meta"></span>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="asc-edit" class="mono text-[11px] border border-line2 px-3 py-1.5 hover:border-amber hover:text-amber">
+          [EDIT]
+        </button>
+        <button id="asc-clear" class="mono text-[11px] border border-line2 px-3 py-1.5 hover:border-red hover:text-red">
+          [CLEAR]
+        </button>
+      </div>
+    </div>
+
+    <div id="asc-edit-panel" class="hidden border-t border-line2 p-5">
+      <div class="label mb-2">PASTE A CODE</div>
+      <div class="flex items-center gap-2">
+        <span class="mono text-amber text-[16px] mr-1">&gt;</span>
+        <input id="asc-input" type="text" autocomplete="off" spellcheck="false"
+               placeholder="ASL-FOUNDERS-001"
+               maxlength="48"
+               class="mono bg-bg border border-line2 px-3 py-2 text-fg text-[14px] flex-1 placeholder:text-dim focus:border-amber"
+               style="text-transform:uppercase;letter-spacing:0.05em;" />
+        <button id="asc-save" class="mono text-[11px] border border-amber text-amber px-3 py-2 hover:bg-amber hover:text-bg">
+          [APPLY]
+        </button>
+      </div>
+      <p class="mono text-[10px] text-mute mt-3">
+        Press [ENTER] to apply. Codes are stored in localStorage on this device only and never
+        transmitted to any server until they're redeemed against a query.
+      </p>
+    </div>
+  </section>
+
+  <!-- PREFIX REGISTRY -->
+  <section>
+    <div class="flex items-baseline justify-between mb-3">
+      <h2 class="label-fg">PREFIX REGISTRY</h2>
+      <span class="mono text-[10px] text-mute">ASC v0.1</span>
+    </div>
+    <div class="border border-line2 bg-panel">
+      <div class="px-4 py-2.5 grid grid-cols-[80px_1fr_auto] mono text-[10px] text-mute border-b border-line2">
+        <div>PREFIX</div>
+        <div>CATEGORY</div>
+        <div class="text-right">DEFAULT BALANCE</div>
+      </div>
+      <ul class="divide-y divide-line2 mono text-[12px]">
+        <li class="px-4 py-2.5 grid grid-cols-[80px_1fr_auto] items-center">
+          <span class="text-amber">ASL</span>
+          <span class="text-fg">universal &middot; works in all Asleepius products</span>
+          <span class="text-right tabular-nums text-mute">10 scrapes</span>
+        </li>
+        <li class="px-4 py-2.5 grid grid-cols-[80px_1fr_auto] items-center">
+          <span class="text-amber">DRF</span>
+          <span class="text-fg">DriftMetrics access &middot; standard issue</span>
+          <span class="text-right tabular-nums text-mute">10 scrapes</span>
+        </li>
+        <li class="px-4 py-2.5 grid grid-cols-[80px_1fr_auto] items-center">
+          <span class="text-amber">EVT</span>
+          <span class="text-fg">event / drop &middot; limited-time, expires in 30 days</span>
+          <span class="text-right tabular-nums text-mute">5 scrapes</span>
+        </li>
+        <li class="px-4 py-2.5 grid grid-cols-[80px_1fr_auto] items-center">
+          <span class="text-amber">PRO</span>
+          <span class="text-fg">promo / pack &middot; bundles</span>
+          <span class="text-right tabular-nums text-mute">30 scrapes</span>
+        </li>
+        <li class="px-4 py-2.5 grid grid-cols-[80px_1fr_auto] items-center">
+          <span class="text-mute">SCH ARC ESO PCK</span>
+          <span class="text-mute">Underground (Asleepius game) &middot; recognized but no DriftMetrics balance</span>
+          <span class="text-right tabular-nums text-mute">0</span>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="prose">
+    <h2>How a code works</h2>
+    <p>
+      Every code is a string in the form <code>PREFIX-BODY</code>, e.g. <code>ASL-FOUNDERS-001</code>
+      or <code>DRF-7F4A-BLOOM</code>. Three uppercase ASCII letters, a dash, then any combination
+      of letters, digits, dashes, or section marks.
+    </p>
+    <p>
+      The full string is hashed with FNV-1a 32-bit. From that hash, two properties are derived
+      <em>deterministically</em>: a tier (1&ndash;4, weighted toward low tiers) and a hidden flag
+      (~40% rate). Same string, same parse, every time, on every device, in every Asleepius product.
+      No server lookup needed for the deterministic layer.
+    </p>
+    <p>
+      For products that meter real compute (DriftMetrics scrapes, future paid features) there's
+      a second layer: a server-side row keyed on the canonical code string with a <code>balance</code>
+      column. Each redemption decrements the balance atomically. When the balance hits zero,
+      the code still parses (Layer 1 still works) but no longer grants metered access.
+    </p>
+
+    <h2>How to get a code</h2>
+    <p>
+      Codes are issued manually by Asleepius Games. Until that changes:
+    </p>
+    <ul class="mono text-[12px] text-fg space-y-2 mt-2 ml-4 list-disc">
+      <li>Hand-printed cards at indie dev events.</li>
+      <li>Drops in our other products (Shred Crawler, future game releases).</li>
+      <li>Direct ask if you've contributed to the Asleepius ecosystem in some way.</li>
+      <li>Eventually: paid via Ko-fi for a code in the thank-you reply.</li>
+    </ul>
+    <p class="mt-4">
+      There is no signup form, no waitlist, no tiered subscription. There may never be. The
+      goal is to keep the access model legible and the gating low-friction once you're in.
+    </p>
+
+    <h2>Privacy</h2>
+    <p>
+      Your code lives in your browser's localStorage. We never see who you are; we only see that
+      <em>some</em> request submitted a code that decrements one row in our codes table by one.
+      We don't know which IP, browser, or device burned a use — only that a use happened.
+    </p>
+    <p>
+      Codes are sharable by design. If you paste your code on Twitter, anyone can use it until
+      the balance runs out. That's intentional. The system rewards possession, not identity.
+    </p>
+
+  </section>
+</main>
+
+<script>
+  function tickClock() {
+    const d = new Date();
+    const z = (n) => String(n).padStart(2,'0');
+    const e = document.getElementById('utc-clock');
+    if (e) e.textContent = `${z(d.getUTCHours())}:${z(d.getUTCMinutes())}:${z(d.getUTCSeconds())} UTC`;
+  }
+  setInterval(tickClock, 1000); tickClock();
+
+  function whenReady(cb) {
+    if (window.DM) cb();
+    else setTimeout(() => whenReady(cb), 50);
+  }
+
+  function refreshCurrentCode() {
+    const code = window.DM?.readStoredCode?.() || '';
+    const el = document.getElementById('asc-current');
+    const meta = document.getElementById('asc-current-meta');
+    if (!code) { el.textContent = 'NONE'; el.className = 'mono text-mute text-[18px]'; meta.textContent = ''; return; }
+    el.textContent = code;
+    el.className = 'mono text-amber text-[18px]';
+    const prefix = (code.match(/^[A-Z]{3}/) || [''])[0];
+    meta.textContent = prefix ? `prefix: ${prefix}` : '';
+  }
+
+  whenReady(() => {
+    refreshCurrentCode();
+    const editBtn   = document.getElementById('asc-edit');
+    const panel     = document.getElementById('asc-edit-panel');
+    const input     = document.getElementById('asc-input');
+    const saveBtn   = document.getElementById('asc-save');
+    const clearBtn  = document.getElementById('asc-clear');
+
+    editBtn.addEventListener('click', () => {
+      panel.classList.toggle('hidden');
+      if (!panel.classList.contains('hidden')) {
+        input.value = window.DM.readStoredCode();
+        setTimeout(() => input.focus(), 30);
+      }
+    });
+    function apply() {
+      const v = (input.value || '').trim().toUpperCase();
+      window.DM.writeStoredCode(v);
+      panel.classList.add('hidden');
+      refreshCurrentCode();
+    }
+    saveBtn.addEventListener('click', apply);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter')  { e.preventDefault(); apply(); }
+      if (e.key === 'Escape') { e.preventDefault(); panel.classList.add('hidden'); }
+    });
+    clearBtn.addEventListener('click', () => {
+      window.DM.writeStoredCode('');
+      refreshCurrentCode();
+    });
+  });
+</script>
+</body>
+</html>

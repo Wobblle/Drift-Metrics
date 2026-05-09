@@ -11110,15 +11110,22 @@ async function runScan(keyword) {
 }
 
 // job.ts
-var SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-var SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_KEY");
-var WORKER_ID = Deno.env.get("WORKER_ID") || `acurast-${crypto.randomUUID().slice(0, 8)}`;
-var SIPHON_TIMEOUT_MS = Number(
-  Deno.env.get("SIPHON_TIMEOUT_MS") || "180000"
-);
+function getEnv() {
+  const std = globalThis._STD_;
+  if (std && std.env) return std.env;
+  const proc = globalThis.process;
+  if (proc && proc.env) return proc.env;
+  return {};
+}
+var env = getEnv();
+var SUPABASE_URL = env.SUPABASE_URL;
+var SERVICE_KEY = env.SUPABASE_SERVICE_KEY;
+var WORKER_ID = env.WORKER_ID || `acurast-${(globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)).slice(0, 8)}`;
+var SIPHON_TIMEOUT_MS = Number(env.SIPHON_TIMEOUT_MS || "180000");
 if (!SUPABASE_URL || !SERVICE_KEY) {
-  console.error("FATAL: SUPABASE_URL and SUPABASE_SERVICE_KEY are required");
-  Deno.exit(1);
+  throw new Error(
+    "FATAL: SUPABASE_URL and SUPABASE_SERVICE_KEY must be set (check acurast.json includeEnvironmentVariables and .env)"
+  );
 }
 var URL_BASE = SUPABASE_URL.replace(/\/+$/, "");
 var H = {
@@ -11206,7 +11213,7 @@ async function runOnce() {
   }
   const jobShort = job.id.slice(0, 8);
   log(`claimed ${jobShort} keyword=${JSON.stringify(job.keyword)}`);
-  const t0 = performance.now();
+  const t0 = typeof performance !== "undefined" ? performance.now() : Date.now();
   let payload;
   try {
     payload = await withTimeout(runScan(job.keyword), SIPHON_TIMEOUT_MS, "siphon");
@@ -11216,7 +11223,8 @@ async function runOnce() {
     await markFailed(job.id);
     return 2;
   }
-  const dur = ((performance.now() - t0) / 1e3).toFixed(1);
+  const tNow = typeof performance !== "undefined" ? performance.now() : Date.now();
+  const dur = ((tNow - t0) / 1e3).toFixed(1);
   try {
     await withTimeout(
       postReport(job.request_id, job.keyword, payload),
@@ -11233,10 +11241,15 @@ async function runOnce() {
     return 3;
   }
 }
-if (import.meta.main) {
-  const code = await runOnce();
-  Deno.exit(code);
-}
+runOnce().then((code) => {
+  if (code !== 0) {
+    throw new Error(`runOnce returned non-zero exit code: ${code}`);
+  }
+}).catch((e) => {
+  const msg = e instanceof Error ? e.message : String(e);
+  console.error(`[fatal] runOnce: ${msg}`);
+  throw e;
+});
 var job_default = runOnce;
 export {
   job_default as default

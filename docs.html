@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>DRIFTMETRICS // DOCS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="./bridge.js"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          bg:'#0A0A0A', panel:'#0F0F0F', line:'#1C1C1C', line2:'#262626',
+          fg:'#E5E5E5', mute:'#6B6B6B', dim:'#3A3A3A',
+          amber:'#FFB000', phos:'#33FF7A', red:'#FF3B3B',
+        },
+        fontFamily: { sans:['Inter','system-ui','sans-serif'], mono:['JetBrains Mono','Menlo','monospace'] }
+      }
+    }
+  }
+</script>
+<style>
+  html,body { background:#0A0A0A; color:#E5E5E5; }
+  body { font-family: 'Inter', system-ui, sans-serif; }
+  .mono { font-family: 'JetBrains Mono', Menlo, monospace; }
+  .label { letter-spacing:0.14em; text-transform:uppercase; font-size:10px; color:#6B6B6B; font-weight:500; }
+  .label-fg { letter-spacing:0.14em; text-transform:uppercase; font-size:10px; color:#E5E5E5; font-weight:600; }
+  ::selection { background:#FFB000; color:#0A0A0A; }
+  kbd { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #FFB000; background: #0F0F0F; padding: 2px 6px; border: 1px solid #1C1C1C; border-bottom-width: 2px; }
+</style>
+</head>
+<body class="min-h-screen bg-bg text-fg antialiased">
+
+<header class="border-b border-line">
+  <div class="max-w-[1400px] mx-auto px-6 h-11 flex items-center justify-between">
+    <div class="flex items-center gap-6">
+      <div class="flex items-center gap-2">
+        <div class="w-2.5 h-2.5 bg-amber"></div>
+        <a href="./index.html" class="mono text-[12px] tracking-[0.18em] font-bold">DRIFTMETRICS</a>
+        <span class="mono text-[10px] text-mute">v0.1.0&minus;alpha</span>
+      </div>
+      <nav class="hidden md:flex items-center gap-5 mono text-[11px] text-mute">
+        <a href="./index.html"   class="hover:text-fg cursor-pointer">REPORT</a>
+        <a href="./browse.html"  class="hover:text-fg cursor-pointer">INDEX</a>
+        <a href="./corpora.html" class="hover:text-fg cursor-pointer">CORPORA</a>
+        <a href="./asc.html"     class="hover:text-fg cursor-pointer">ASC</a>
+        <a href="./docs.html"    class="text-fg">DOCS</a>
+      </nav>
+    </div>
+    <div class="flex items-center gap-5 mono text-[11px] text-mute">
+      <span><span class="text-fg">acurast.fleet</span> &middot; node --</span>
+      <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 bg-phos"></span><span>OPERATIONAL</span></span>
+      <span id="utc-clock">--:--:-- UTC</span>
+      <span class="text-fg" id="dm-identity">anon</span>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-[1400px] mx-auto px-6 py-12 space-y-12">
+
+  <section>
+    <div class="mono text-[11px] text-mute mb-6">
+      <span class="text-amber">[</span> DOCS <span class="text-fg">05&minus;OPS</span> <span class="text-amber">]</span>
+      <span class="mx-2">&middot;</span> OPERATING MANUAL
+    </div>
+    <h1 class="text-[32px] md:text-[44px] leading-[1.0] tracking-tight font-semibold max-w-[820px] mb-4">
+      How the tool actually behaves.
+    </h1>
+    <p class="mono text-[12px] text-mute max-w-[680px] mt-5">
+      Short, concrete, and incomplete on purpose. Methodology lives at <a href="./corpora.html" class="text-amber hover:underline">CORPORA</a>;
+      access codes live at <a href="./asc.html" class="text-amber hover:underline">ASC</a>; this page is the operating layer.
+    </p>
+  </section>
+
+  <!-- KEYBOARD SHORTCUTS -->
+  <section>
+    <h2 class="label-fg mb-3">KEYBOARD SHORTCUTS</h2>
+    <div class="border border-line2">
+      <div class="px-4 py-2.5 grid grid-cols-[160px_1fr] mono text-[10px] text-mute border-b border-line2">
+        <div>KEY</div><div>EFFECT</div>
+      </div>
+      <ul class="divide-y divide-line2 mono text-[12px]">
+        <li class="px-4 py-2.5 grid grid-cols-[160px_1fr] items-center">
+          <div><kbd>Ctrl</kbd>+<kbd>K</kbd> / <kbd>Cmd</kbd>+<kbd>K</kbd></div>
+          <div class="text-fg">Toggle the access code panel anywhere.</div>
+        </li>
+        <li class="px-4 py-2.5 grid grid-cols-[160px_1fr] items-center">
+          <div><kbd>Enter</kbd></div>
+          <div class="text-fg">In the search input: execute the query. In the code panel: apply the code.</div>
+        </li>
+        <li class="px-4 py-2.5 grid grid-cols-[160px_1fr] items-center">
+          <div><kbd>Esc</kbd></div>
+          <div class="text-fg">Clear the search input. Close the code panel without saving.</div>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- QUERY LIFECYCLE -->
+  <section>
+    <h2 class="label-fg mb-3">QUERY LIFECYCLE</h2>
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-px bg-line border border-line">
+      <div class="bg-bg p-4">
+        <div class="label mb-2">1. CACHE PRE-FLIGHT</div>
+        <p class="mono text-[11px] text-mute leading-relaxed">
+          Frontend checks if a fresh report exists for this keyword. Free, instant, no fleet involvement.
+        </p>
+      </div>
+      <div class="bg-bg p-4">
+        <div class="label mb-2">2. DISPATCH</div>
+        <p class="mono text-[11px] text-mute leading-relaxed">
+          On miss, frontend POSTs to a Cloudflare-Turnstile-gated Edge Function. Code (if stored) gets burned here.
+        </p>
+      </div>
+      <div class="bg-bg p-4">
+        <div class="label mb-2">3. QUEUE</div>
+        <p class="mono text-[11px] text-mute leading-relaxed">
+          Edge Function inserts a row into the Postgres queue. Hostile traffic gets silently shadowbanned.
+        </p>
+      </div>
+      <div class="bg-bg p-4">
+        <div class="label mb-2">4. FLEET</div>
+        <p class="mono text-[11px] text-mute leading-relaxed">
+          An Acurast TEE worker claims the row, scrapes the corpora, computes drift, posts the report.
+        </p>
+      </div>
+      <div class="bg-bg p-4">
+        <div class="label mb-2">5. RENDER</div>
+        <p class="mono text-[11px] text-mute leading-relaxed">
+          Frontend polls every 3s, renders the Displacement Report when it lands. Times out at 45s.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ERROR REFERENCE -->
+  <section>
+    <h2 class="label-fg mb-3">ERROR REFERENCE</h2>
+    <div class="border border-line2">
+      <div class="px-4 py-2.5 grid grid-cols-[200px_1fr] mono text-[10px] text-mute border-b border-line2">
+        <div>MESSAGE</div><div>WHAT IT MEANS</div>
+      </div>
+      <ul class="divide-y divide-line2 mono text-[12px]">
+        <li class="px-4 py-2.5 grid grid-cols-[200px_1fr] items-center">
+          <div class="text-red">ERR: DISPATCH FAILED</div>
+          <div class="text-fg">The Edge Function returned non-2xx or wasn't reachable. Likely a transient network issue. Retry.</div>
+        </li>
+        <li class="px-4 py-2.5 grid grid-cols-[200px_1fr] items-center">
+          <div class="text-red">ERR: NODE TIMEOUT</div>
+          <div class="text-fg">No fleet worker posted a result within 45s. Could be queue backpressure, soft shadowban, or fleet idle. Try again later.</div>
+        </li>
+        <li class="px-4 py-2.5 grid grid-cols-[200px_1fr] items-center">
+          <div class="text-mute">CACHE HIT</div>
+          <div class="text-fg">Not an error — recent report served from the public cache. No code burned, no fleet activity.</div>
+        </li>
+        <li class="px-4 py-2.5 grid grid-cols-[200px_1fr] items-center">
+          <div class="text-amber">CODE BURNED</div>
+          <div class="text-fg">Not an error — your code's balance just decremented by 1 to dispatch this scrape.</div>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- READ THE FIELDS -->
+  <section>
+    <h2 class="label-fg mb-3">READING A REPORT</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-px bg-line border border-line">
+      <div class="bg-bg p-4">
+        <div class="label mb-2">DRIFT</div>
+        <p class="mono text-[11px] text-fg leading-relaxed">
+          Composite distance between Enclosure and Baseline. Higher = the algorithm is showing you a more
+          divergent view from the lexical/organic baseline. Bands: <span class="text-amber">≥85%</span> CRITICAL,
+          70&ndash;85 ELEVATED, 50&ndash;70 MODERATE, &lt;50 LOW.
+        </p>
+      </div>
+      <div class="bg-bg p-4">
+        <div class="label mb-2">CONFIDENCE</div>
+        <p class="mono text-[11px] text-fg leading-relaxed">
+          How thick the underlying corpora are. Low confidence ({"<"}30%) usually means at least one source
+          got captcha-walled or returned thin results — treat the drift number with skepticism.
+        </p>
+      </div>
+      <div class="bg-bg p-4">
+        <div class="label mb-2">SUBSIDY (+)</div>
+        <p class="mono text-[11px] text-fg leading-relaxed">
+          Words the algorithm injected. High weight in Enclosure, near-zero in Baseline. These are the
+          terms the SERP wants you thinking about.
+        </p>
+      </div>
+      <div class="bg-bg p-4">
+        <div class="label mb-2">SUPPRESSED (&minus;)</div>
+        <p class="mono text-[11px] text-fg leading-relaxed">
+          Words the algorithm scrubbed. High weight in Baseline, near-zero in Enclosure. These are the
+          terms organic users use that the SERP filtered out.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- LINKS -->
+  <section>
+    <h2 class="label-fg mb-3">SEE ALSO</h2>
+    <ul class="mono text-[13px] space-y-2">
+      <li>
+        <a href="./corpora.html" class="text-amber hover:underline">CORPORA</a>
+        <span class="text-mute"> &middot; methodology, math, what's actually being measured</span>
+      </li>
+      <li>
+        <a href="./asc.html" class="text-amber hover:underline">ASC</a>
+        <span class="text-mute"> &middot; access codes, prefix registry, how to get one</span>
+      </li>
+      <li>
+        <a href="./browse.html" class="text-amber hover:underline">INDEX</a>
+        <span class="text-mute"> &middot; the public square of every report ever computed</span>
+      </li>
+      <li>
+        <a href="./index.html" class="text-amber hover:underline">REPORT</a>
+        <span class="text-mute"> &middot; run a fresh scan</span>
+      </li>
+    </ul>
+  </section>
+
+  <p class="mono text-[10px] text-mute mt-12">
+    This page is incomplete. More content lands as the tool matures.
+  </p>
+</main>
+
+<script>
+  function tickClock() {
+    const d = new Date();
+    const z = (n) => String(n).padStart(2,'0');
+    const e = document.getElementById('utc-clock');
+    if (e) e.textContent = `${z(d.getUTCHours())}:${z(d.getUTCMinutes())}:${z(d.getUTCSeconds())} UTC`;
+  }
+  setInterval(tickClock, 1000); tickClock();
+</script>
+</body>
+</html>

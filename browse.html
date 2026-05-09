@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>DRIFTMETRICS // INDEX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="./bridge.js"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          bg:    '#0A0A0A',
+          panel: '#0F0F0F',
+          line:  '#1C1C1C',
+          line2: '#262626',
+          fg:    '#E5E5E5',
+          mute:  '#6B6B6B',
+          dim:   '#3A3A3A',
+          amber: '#FFB000',
+          phos:  '#33FF7A',
+          red:   '#FF3B3B',
+        },
+        fontFamily: {
+          sans: ['Inter','system-ui','sans-serif'],
+          mono: ['JetBrains Mono','Menlo','monospace'],
+        }
+      }
+    }
+  }
+</script>
+<style>
+  html,body { background:#0A0A0A; color:#E5E5E5; }
+  body { font-family: 'Inter', system-ui, sans-serif; }
+  .mono { font-family: 'JetBrains Mono', Menlo, monospace; }
+  .label { letter-spacing:0.14em; text-transform:uppercase; font-size:10px; color:#6B6B6B; font-weight:500; }
+  .label-fg { letter-spacing:0.14em; text-transform:uppercase; font-size:10px; color:#E5E5E5; font-weight:600; }
+  ::selection { background:#FFB000; color:#0A0A0A; }
+  input:focus { outline: none; }
+  .row:hover { background:#121212; }
+  .ticks > i {
+    position:absolute; width:8px; height:8px; border-color:#3A3A3A; border-style:solid; border-width:0;
+  }
+  .ticks > i.tl { top:-1px; left:-1px; border-top-width:1px; border-left-width:1px; }
+  .ticks > i.tr { top:-1px; right:-1px; border-top-width:1px; border-right-width:1px; }
+  .ticks > i.bl { bottom:-1px; left:-1px; border-bottom-width:1px; border-left-width:1px; }
+  .ticks > i.br { bottom:-1px; right:-1px; border-bottom-width:1px; border-right-width:1px; }
+
+  /* Dual-range slider — two overlapping inputs share one track */
+  .dual-range {
+    position: relative;
+    height: 38px;
+    display: flex;
+    align-items: center;
+  }
+  .dual-range .track {
+    position: absolute; left: 0; right: 0; top: 50%;
+    height: 2px; background: #1C1C1C; transform: translateY(-50%);
+  }
+  .dual-range .track-fill {
+    position: absolute; top: 50%; height: 2px;
+    background: #FFB000; transform: translateY(-50%);
+  }
+  .dual-range input[type="range"] {
+    position: absolute; left: 0; right: 0; width: 100%;
+    -webkit-appearance: none; appearance: none;
+    background: transparent;
+    pointer-events: none;
+    height: 38px; margin: 0; padding: 0;
+  }
+  .dual-range input[type="range"]::-webkit-slider-thumb {
+    pointer-events: auto; -webkit-appearance: none;
+    width: 14px; height: 14px;
+    background: #FFB000; border: 1px solid #FFB000;
+    cursor: pointer;
+    border-radius: 0;
+    margin-top: 0;
+  }
+  .dual-range input[type="range"]::-moz-range-thumb {
+    pointer-events: auto;
+    width: 14px; height: 14px;
+    background: #FFB000; border: 1px solid #FFB000;
+    cursor: pointer; border-radius: 0;
+  }
+  .dual-range input[type="range"]::-webkit-slider-runnable-track {
+    background: transparent; border: none; height: 2px;
+  }
+  .dual-range input[type="range"]::-moz-range-track {
+    background: transparent; border: none; height: 2px;
+  }
+
+  /* expandable row detail */
+  .row-detail { display: none; }
+  .row.open + .row-detail { display: block; }
+</style>
+</head>
+<body class="min-h-screen bg-bg text-fg antialiased">
+
+<!-- ============== TOP BAR ============== -->
+<header class="border-b border-line">
+  <div class="max-w-[1400px] mx-auto px-6 h-11 flex items-center justify-between">
+    <div class="flex items-center gap-6">
+      <div class="flex items-center gap-2">
+        <div class="w-2.5 h-2.5 bg-amber"></div>
+        <a href="./index.html" class="mono text-[12px] tracking-[0.18em] font-bold">DRIFTMETRICS</a>
+        <span class="mono text-[10px] text-mute">v0.1.0&minus;alpha</span>
+      </div>
+      <nav class="hidden md:flex items-center gap-5 mono text-[11px] text-mute">
+        <a href="./index.html"   class="hover:text-fg cursor-pointer">REPORT</a>
+        <a href="./browse.html"  class="text-fg">INDEX</a>
+        <a href="./corpora.html" class="hover:text-fg cursor-pointer">CORPORA</a>
+        <a href="./asc.html"     class="hover:text-fg cursor-pointer">ASC</a>
+        <a href="./docs.html"    class="hover:text-fg cursor-pointer">DOCS</a>
+      </nav>
+    </div>
+    <div class="flex items-center gap-5 mono text-[11px] text-mute">
+      <span><span class="text-fg" id="cluster">acurast.fleet</span> &middot; <span id="cluster-node">node --</span></span>
+      <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 bg-phos"></span><span>OPERATIONAL</span></span>
+      <span id="utc-clock">--:--:-- UTC</span>
+      <span class="text-fg" id="dm-identity">anon</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============== STAGE ============== -->
+<main class="max-w-[1400px] mx-auto px-6 py-12 space-y-10">
+
+  <!-- HEADER -->
+  <section>
+    <div class="mono text-[11px] text-mute mb-6">
+      <span class="text-amber">[</span> INDEX <span class="text-fg">02&minus;PUBLIC</span> <span class="text-amber">]</span>
+      <span class="mx-2">&middot;</span> THE PUBLIC SQUARE
+    </div>
+    <h1 class="text-[32px] md:text-[44px] leading-[1.0] tracking-tight font-semibold max-w-[820px]">
+      Every Displacement Report ever computed.
+      <span class="text-mute block mt-2">No special access. No hidden tier.</span>
+    </h1>
+    <p class="mono text-[12px] text-mute max-w-[680px] mt-5">
+      All scrapes performed by the fleet land here within the cache window. Your queries feed the index;
+      everyone&apos;s queries feed your view. This is the architecture, not a feature.
+    </p>
+  </section>
+
+  <!-- FILTER + SORT CONTROLS -->
+  <section class="border border-line2 bg-panel relative ticks">
+    <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
+
+    <div class="flex items-center justify-between px-4 h-8 border-b border-line2 mono text-[10px] text-mute">
+      <div class="flex items-center gap-3">
+        <span class="text-amber">FILTER</span>
+        <span class="text-dim">|</span>
+        <span>RANGE: <span id="range-label" class="text-fg">last 7 days</span></span>
+      </div>
+      <div class="flex items-center gap-3">
+        <span>SORT</span>
+        <select id="sort-select" class="bg-bg border border-line2 px-2 py-0.5 mono text-[10px] text-fg cursor-pointer hover:border-amber focus:outline-none">
+          <option value="recent">recency</option>
+          <option value="drift_desc">drift &darr;</option>
+          <option value="drift_asc">drift &uarr;</option>
+          <option value="conf_desc">confidence &darr;</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="p-5">
+      <!-- DUAL RANGE SLIDER -->
+      <div class="mb-3">
+        <div class="dual-range">
+          <div class="track"></div>
+          <div class="track-fill" id="range-fill"></div>
+          <!-- Both ranges go 0..365 days back. Higher value = further in past. -->
+          <input id="range-from" type="range" min="0" max="365" value="7"  step="1" />
+          <input id="range-to"   type="range" min="0" max="365" value="0"  step="1" />
+        </div>
+        <div class="flex items-center justify-between mono text-[10px] text-mute mt-1">
+          <span id="range-from-label">7d ago</span>
+          <span class="text-dim">|</span>
+          <span id="range-to-label">now</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- REPORT LIST -->
+  <section>
+    <div class="flex items-baseline justify-between mb-3">
+      <h2 class="label-fg">REPORTS</h2>
+      <span id="result-count" class="mono text-[10px] text-mute">&mdash;</span>
+    </div>
+
+    <div class="border border-line2">
+      <div class="px-4 py-2.5 grid grid-cols-[1fr_100px_80px_80px_120px] mono text-[10px] text-mute border-b border-line2">
+        <div>KEYWORD</div>
+        <div class="text-right">DRIFT</div>
+        <div class="text-right">CONF</div>
+        <div class="text-right">SOURCE</div>
+        <div class="text-right">WHEN</div>
+      </div>
+      <div id="report-list">
+        <div class="px-4 py-8 text-center mono text-[12px] text-mute">loading&hellip;</div>
+      </div>
+      <div class="px-4 py-3 border-t border-line2 text-center">
+        <button id="btn-load-more" class="mono text-[11px] text-mute hover:text-amber cursor-pointer">
+          [ LOAD MORE ]
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- footer meta — same shape as REPORT page -->
+  <section class="grid grid-cols-2 md:grid-cols-4 gap-px bg-line border border-line">
+    <div class="bg-bg p-4">
+      <div class="label mb-2">INDEXED REPORTS</div>
+      <div class="mono text-[18px] tabular-nums" id="stat-corpora">&mdash;</div>
+    </div>
+    <div class="bg-bg p-4">
+      <div class="label mb-2">QUERIES / 24H</div>
+      <div class="mono text-[18px] tabular-nums" id="stat-queries">&mdash;</div>
+    </div>
+    <div class="bg-bg p-4">
+      <div class="label mb-2">MEDIAN DRIFT</div>
+      <div class="mono text-[18px] tabular-nums text-amber" id="stat-median-drift">&mdash;</div>
+    </div>
+    <div class="bg-bg p-4">
+      <div class="label mb-2">LAST REPORT</div>
+      <div class="mono text-[18px] tabular-nums" id="stat-last-refresh">&mdash;</div>
+    </div>
+  </section>
+</main>
+
+<!-- ============== STATUS BAR ============== -->
+<footer class="fixed bottom-0 left-0 right-0 border-t border-line bg-bg/95 backdrop-blur-sm">
+  <div class="max-w-[1400px] mx-auto px-6 h-7 flex items-center justify-between mono text-[10px] text-mute">
+    <div class="flex items-center gap-4">
+      <span class="text-fg">INDEX</span>
+      <span class="text-dim">|</span>
+      <span>RTT <span class="text-fg" id="rtt">--ms</span></span>
+    </div>
+    <div class="flex items-center gap-4">
+      <span>UTC</span>
+      <span id="utc-clock-2" class="text-fg">--:--:--</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ============================================================
+   INDEX page logic — list + filter + sort
+   ============================================================ */
+const $ = (id) => document.getElementById(id);
+
+/* clock (mirrors index.html) */
+function tickClock() {
+  const d = new Date();
+  const z = (n) => String(n).padStart(2,'0');
+  $('utc-clock').textContent   = `${z(d.getUTCHours())}:${z(d.getUTCMinutes())}:${z(d.getUTCSeconds())} UTC`;
+  $('utc-clock-2').textContent = `${z(d.getUTCHours())}:${z(d.getUTCMinutes())}:${z(d.getUTCSeconds())}`;
+}
+setInterval(tickClock, 1000); tickClock();
+
+/* dual-range slider math */
+const rFrom  = $('range-from');
+const rTo    = $('range-to');
+const rFill  = $('range-fill');
+const rFromL = $('range-from-label');
+const rToL   = $('range-to-label');
+const rangeLabel = $('range-label');
+
+function fmtDaysAgo(d) {
+  if (d <= 0) return 'now';
+  if (d === 1) return '1d ago';
+  if (d < 30)  return `${d}d ago`;
+  if (d < 365) return `${Math.floor(d/30)}mo ago`;
+  return '1y ago';
+}
+
+function clampRange() {
+  let from = parseInt(rFrom.value, 10);
+  let to   = parseInt(rTo.value, 10);
+  // We want from > to (older is bigger).
+  if (from < to) {
+    if (this === rFrom) to = from;
+    else                 from = to;
+  }
+  if (from < 1 && to < 1) from = 1;        // never zero-width
+  rFrom.value = from;
+  rTo.value   = to;
+  // Visual fill: lower-pct ↔ left, higher-pct ↔ right (in % of 365)
+  const max = parseInt(rFrom.max, 10);
+  const leftPct  = (1 - from / max) * 100;
+  const rightPct = (1 - to   / max) * 100;
+  rFill.style.left  = `${leftPct}%`;
+  rFill.style.right = `${100 - rightPct}%`;
+  rFromL.textContent = fmtDaysAgo(from);
+  rToL.textContent   = fmtDaysAgo(to);
+  rangeLabel.textContent = `${fmtDaysAgo(from)} → ${fmtDaysAgo(to)}`;
+}
+
+[rFrom, rTo].forEach(el => {
+  el.addEventListener('input',  function () { clampRange.call(this); });
+  el.addEventListener('change', function () { clampRange.call(this); fetchAndRender(true); });
+});
+
+/* sort */
+$('sort-select').addEventListener('change', () => fetchAndRender(true));
+
+/* ----- fetching ----- */
+let pageOffset = 0;
+const PAGE_SIZE = 25;
+let totalRows   = 0;
+
+function isoFromDaysAgo(d) {
+  return new Date(Date.now() - d * 86400000).toISOString();
+}
+
+function buildQueryUrl() {
+  const fromDays = parseInt(rFrom.value, 10);
+  const toDays   = parseInt(rTo.value, 10);
+  const sort     = $('sort-select').value;
+  const fromIso  = isoFromDaysAgo(fromDays);
+  const toIso    = isoFromDaysAgo(toDays);
+
+  const params = new URLSearchParams();
+  params.append('select', 'request_id,keyword,payload,created_at');
+  params.append('created_at', `gte.${fromIso}`);
+  params.append('created_at', `lte.${toIso}`);
+  switch (sort) {
+    case 'drift_desc': params.append('order', 'payload->drift.desc.nullslast'); break;
+    case 'drift_asc':  params.append('order', 'payload->drift.asc.nullslast');  break;
+    case 'conf_desc':  params.append('order', 'payload->confidence.desc.nullslast'); break;
+    default:           params.append('order', 'created_at.desc'); break;
+  }
+  return `${window.DM_SUPABASE_URL || ''}/rest/v1/reports?${params.toString()}`;
+}
+
+async function fetchPage(reset) {
+  if (reset) pageOffset = 0;
+  const headers = {
+    apikey: window.DM_SUPABASE_ANON_KEY,
+    Authorization: `Bearer ${window.DM_SUPABASE_ANON_KEY}`,
+    'Content-Type': 'application/json',
+    Prefer: 'count=exact',
+    Range: `${pageOffset}-${pageOffset + PAGE_SIZE - 1}`,
+  };
+  const t0 = performance.now();
+  const r = await fetch(buildQueryUrl(), { headers });
+  const dt = Math.round(performance.now() - t0);
+  $('rtt').textContent = `${dt}ms`;
+  if (!r.ok) return { rows: [], total: 0 };
+  const cr = r.headers.get('content-range') || '0-0/0';
+  const total = parseInt(cr.split('/')[1] || '0', 10);
+  const rows  = await r.json();
+  return { rows, total };
+}
+
+function relativeTime(iso) {
+  const ms = Date.now() - new Date(iso).getTime();
+  if (ms < 60_000)     return `${Math.floor(ms/1000)}s ago`;
+  if (ms < 3_600_000)  return `${Math.floor(ms/60_000)}m ago`;
+  if (ms < 86_400_000) return `${Math.floor(ms/3_600_000)}h ago`;
+  return `${Math.floor(ms/86_400_000)}d ago`;
+}
+
+function rowDetail(row) {
+  const p = row.payload || {};
+  const m = p.metrics || {};
+  const subsidy = (p.subsidy || []).slice(0, 3);
+  const suppr   = (p.suppressed || []).slice(0, 3);
+  const fmtPct  = (n) => typeof n === 'number' ? `${(n*100).toFixed(1)}%` : '—';
+  const subList = subsidy.map(t => `<span class="text-amber">+${t[0]}</span>`).join(' ');
+  const supList = suppr.map(t => `<span class="text-red">&minus;${t[0]}</span>`).join(' ');
+  return `
+    <div class="row-detail bg-panel border-t border-line2 px-4 py-4 mono text-[11px]">
+      <div class="grid grid-cols-2 md:grid-cols-6 gap-4">
+        <div><div class="label mb-1">LEX</div><div class="text-fg">${fmtPct(m.lex)}</div></div>
+        <div><div class="label mb-1">SEM</div><div class="text-fg">${fmtPct(m.sem)}</div></div>
+        <div><div class="label mb-1">SUB</div><div class="text-fg">${fmtPct(m.sub)}</div></div>
+        <div><div class="label mb-1">SUP</div><div class="text-fg">${fmtPct(m.sup)}</div></div>
+        <div><div class="label mb-1">OVL</div><div class="text-fg">${fmtPct(m.ovl)}</div></div>
+        <div><div class="label mb-1">COM</div><div class="text-fg">${fmtPct(m.com)}</div></div>
+      </div>
+      <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <div class="label mb-1">SUBSIDY (top 3)</div>
+          <div>${subList || '<span class="text-mute">none</span>'}</div>
+        </div>
+        <div>
+          <div class="label mb-1">SUPPRESSED (top 3)</div>
+          <div>${supList || '<span class="text-mute">none</span>'}</div>
+        </div>
+      </div>
+      <div class="mt-4 mono text-[10px] text-mute">
+        ENCLOSURE: <span class="text-fg">${p.enclosure || '?'}</span> &middot;
+        BASELINE: <span class="text-fg">${p.baseline || '?'}</span> &middot;
+        REQ: <span class="text-fg">${(row.request_id || '').slice(0,8)}</span>
+      </div>
+    </div>
+  `;
+}
+
+function rowMarkup(row) {
+  const p = row.payload || {};
+  const drift = typeof p.drift === 'number' ? `${(p.drift*100).toFixed(1)}%` : '—';
+  const conf  = typeof p.confidence === 'number' ? `${(p.confidence*100).toFixed(0)}%` : '—';
+  // Heuristic source classification — payload doesn't store coded/open today,
+  // so we infer: confidence > 0.85 = likely coded scrape, otherwise open
+  const src   = (p.confidence ?? 0) > 0.85 ? 'coded' : 'open';
+  const cls   = src === 'coded' ? 'text-amber' : 'text-mute';
+  return `
+    <div class="row px-4 py-2.5 grid grid-cols-[1fr_100px_80px_80px_120px] items-center mono text-[12px] cursor-pointer border-b border-line"
+         data-rid="${row.request_id || ''}">
+      <div class="truncate text-fg">${row.keyword}</div>
+      <div class="text-right tabular-nums text-amber">${drift}</div>
+      <div class="text-right tabular-nums text-mute">${conf}</div>
+      <div class="text-right ${cls}">${src}</div>
+      <div class="text-right tabular-nums text-mute">${relativeTime(row.created_at)}</div>
+    </div>
+    ${rowDetail(row)}
+  `;
+}
+
+async function fetchAndRender(reset) {
+  if (reset) {
+    $('report-list').innerHTML = '<div class="px-4 py-8 text-center mono text-[12px] text-mute">loading&hellip;</div>';
+  }
+  const { rows, total } = await fetchPage(reset);
+  totalRows = total;
+  const list = $('report-list');
+  if (reset) list.innerHTML = '';
+  if (!rows.length && reset) {
+    list.innerHTML = '<div class="px-4 py-8 text-center mono text-[12px] text-mute">no reports in this range</div>';
+    $('result-count').textContent = '0 reports';
+    $('btn-load-more').classList.add('hidden');
+    return;
+  }
+  for (const row of rows) {
+    const wrap = document.createElement('div');
+    wrap.innerHTML = rowMarkup(row);
+    // attach click handler (toggle expanded)
+    const r = wrap.querySelector('.row');
+    r.addEventListener('click', () => r.classList.toggle('open'));
+    list.appendChild(wrap);
+  }
+  pageOffset += rows.length;
+  $('result-count').textContent = `${pageOffset} of ${total.toLocaleString()} reports`;
+  $('btn-load-more').classList.toggle('hidden', pageOffset >= total);
+}
+
+$('btn-load-more').addEventListener('click', () => fetchAndRender(false));
+
+/* footer stats — wait for bridge.js to expose */
+function whenReady(cb) {
+  if (window.DM && window.DM_SUPABASE_URL) cb();
+  else setTimeout(() => whenReady(cb), 50);
+}
+whenReady(() => {
+  // bridge.js auto-runs applyIdentity on init for #dm-identity. We rely on it.
+  if (window.DM.fetchStats && window.DM.applyStats) {
+    window.DM.fetchStats().then(window.DM.applyStats);
+  }
+  clampRange();
+  fetchAndRender(true);
+});
+</script>
+</body>
+</html>

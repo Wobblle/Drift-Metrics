@@ -1,0 +1,83 @@
+{
+  "deployedAt": "2026-05-09T06:51:18.637Z",
+  "assignments": [],
+  "status": "init",
+  "config": {
+    "projectName": "driftmetrics-fleet-worker",
+    "fileUrl": "dist/job.bundle.js",
+    "network": "mainnet",
+    "runtime": "NodeJSWithBundle",
+    "assignmentStrategy": {
+      "type": "Single"
+    },
+    "execution": {
+      "type": "interval",
+      "intervalInMs": 300000,
+      "numberOfExecutions": 60,
+      "maxExecutionTimeInMs": 270000
+    },
+    "maxAllowedStartDelayInMs": 10000,
+    "numberOfReplicas": 5,
+    "processorWhitelist": [
+      "5E5A967y5h2tDwZMKZatYo1CkcY54NVNgJXYF7GWxyfVaJtK",
+      "5HYZZHrfPyaWC4u8meEpBVEJ1vdsC5Yh4Uxtd4HrRRzev37m",
+      "5CVqtsMSjPDvk2ratf5Rddwe2N2eWpKeAsTHxteLx6KQhLUP",
+      "5E1y8PQhZMd3XwrD6etrWn3YaVdPkGR34q4683hQ5LWbj5hq",
+      "5DmPSX2Msm9VhyJuC83ZZmZnZEfM4UTERQ4jjQPK49Dx39CL"
+    ],
+    "minProcessorReputation": 0,
+    "maxCostPerExecution": 2366586900,
+    "usageLimit": {
+      "maxMemory": 0,
+      "maxNetworkRequests": 30,
+      "maxStorage": 0
+    },
+    "includeEnvironmentVariables": [
+      "SUPABASE_SERVICE_KEY",
+      "SUPABASE_URL",
+      "SIPHON_TIMEOUT_MS"
+    ],
+    "enableDevtools": true,
+    "onlyAttestedDevices": false,
+    "mutability": "Immutable"
+  },
+  "registration": {
+    "script": "ipfs://QmTEZXboBEUgjdG7bYkTbNRW7s5BkaP1JtvQU9J89yzVQg",
+    "allowedSources": [
+      "5E5A967y5h2tDwZMKZatYo1CkcY54NVNgJXYF7GWxyfVaJtK",
+      "5HYZZHrfPyaWC4u8meEpBVEJ1vdsC5Yh4Uxtd4HrRRzev37m",
+      "5CVqtsMSjPDvk2ratf5Rddwe2N2eWpKeAsTHxteLx6KQhLUP",
+      "5E1y8PQhZMd3XwrD6etrWn3YaVdPkGR34q4683hQ5LWbj5hq",
+      "5DmPSX2Msm9VhyJuC83ZZmZnZEfM4UTERQ4jjQPK49Dx39CL"
+    ],
+    "allowOnlyVerifiedSources": false,
+    "schedule": {
+      "duration": 270000,
+      "startTime": 1778309778637,
+      "endTime": 1778327778638,
+      "interval": 300000,
+      "maxStartDelay": 10000
+    },
+    "memory": 0,
+    "networkRequests": 30,
+    "storage": 0,
+    "mutability": "Immutable",
+    "extra": {
+      "requirements": {
+        "assignmentStrategy": {
+          "variant": "Single"
+        },
+        "slots": 5,
+        "reward": 2366586900,
+        "minReputation": 0,
+        "runtime": "NodeJSWithBundle"
+      }
+    }
+  },
+  "deploymentId": [
+    {
+      "acurast": "5HiYtcVtpxTjni3PbrgDRSDv7LbxtQBiSsBXrDbeVzjCFTns"
+    },
+    55728
+  ]
+}

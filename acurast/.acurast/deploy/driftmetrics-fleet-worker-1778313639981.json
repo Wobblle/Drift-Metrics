@@ -1,0 +1,91 @@
+{
+  "deployedAt": "2026-05-09T08:00:39.981Z",
+  "assignments": [],
+  "status": "init",
+  "config": {
+    "projectName": "driftmetrics-fleet-worker",
+    "fileUrl": "dist/job.bundle.js",
+    "network": "mainnet",
+    "runtime": "NodeJSWithBundle",
+    "assignmentStrategy": {
+      "type": "Single"
+    },
+    "execution": {
+      "type": "interval",
+      "intervalInMs": 300000,
+      "numberOfExecutions": 60,
+      "maxExecutionTimeInMs": 270000
+    },
+    "maxAllowedStartDelayInMs": 10000,
+    "numberOfReplicas": 5,
+    "processorWhitelist": [
+      "5E1y8PQhZMd3XwrD6etrWn3YaVdPkGR34q4683hQ5LWbj5hq",
+      "5CVqtsMSjPDvk2ratf5Rddwe2N2eWpKeAsTHxteLx6KQhLUP",
+      "5E5A967y5h2tDwZMKZatYo1CkcY54NVNgJXYF7GWxyfVaJtK",
+      "5DmPSX2Msm9VhyJuC83ZZmZnZEfM4UTERQ4jjQPK49Dx39CL",
+      "5H6ZVTwTQMgdfnvfTh84fPxEraHCGj1a5JabwAZ1E4psDu6M",
+      "5Gcg52ig7RreEUCnoQHH4tj4f79eMNVGvmeQc5B4tSc8mfsU",
+      "5HjHMAyVUaPgFvh15G9QLD3tXyayYzasdUmnzmnCWn3ZHEb4",
+      "5C7pbqnCLFYUfuqecGGuv5hQYexGTMKjusUNWB4iVkrEoBTo",
+      "5Fs95s6Sym9dfGHWGt3x7XRAkV74G3bHUGSNyJSm7RJAaJX2",
+      "5D91zETYaZjXyRQPpKcQAKQvnDT7EYVejx1rL9xXfSHMYtUA",
+      "5Ha45hRmhM5bUEriaSqFWB64yDeG2WRPXaXi6QorMjCpuoaW",
+      "5F3WNjCnDzDeKyWGp5nrVEtGHrSaGffBF8Zg1YCtCaH2w1qV"
+    ],
+    "minProcessorReputation": 0,
+    "maxCostPerExecution": 10000000000,
+    "usageLimit": {
+      "maxMemory": 0,
+      "maxNetworkRequests": 30,
+      "maxStorage": 0
+    },
+    "includeEnvironmentVariables": [
+      "SUPABASE_SERVICE_KEY",
+      "SUPABASE_URL",
+      "SIPHON_TIMEOUT_MS"
+    ],
+    "enableDevtools": true,
+    "onlyAttestedDevices": false,
+    "mutability": "Immutable"
+  },
+  "registration": {
+    "script": "ipfs://QmTEZXboBEUgjdG7bYkTbNRW7s5BkaP1JtvQU9J89yzVQg",
+    "allowedSources": [
+      "5E1y8PQhZMd3XwrD6etrWn3YaVdPkGR34q4683hQ5LWbj5hq",
+      "5CVqtsMSjPDvk2ratf5Rddwe2N2eWpKeAsTHxteLx6KQhLUP",
+      "5E5A967y5h2tDwZMKZatYo1CkcY54NVNgJXYF7GWxyfVaJtK",
+      "5DmPSX2Msm9VhyJuC83ZZmZnZEfM4UTERQ4jjQPK49Dx39CL",
+      "5H6ZVTwTQMgdfnvfTh84fPxEraHCGj1a5JabwAZ1E4psDu6M",
+      "5Gcg52ig7RreEUCnoQHH4tj4f79eMNVGvmeQc5B4tSc8mfsU",
+      "5HjHMAyVUaPgFvh15G9QLD3tXyayYzasdUmnzmnCWn3ZHEb4",
+      "5C7pbqnCLFYUfuqecGGuv5hQYexGTMKjusUNWB4iVkrEoBTo",
+      "5Fs95s6Sym9dfGHWGt3x7XRAkV74G3bHUGSNyJSm7RJAaJX2",
+      "5D91zETYaZjXyRQPpKcQAKQvnDT7EYVejx1rL9xXfSHMYtUA",
+      "5Ha45hRmhM5bUEriaSqFWB64yDeG2WRPXaXi6QorMjCpuoaW",
+      "5F3WNjCnDzDeKyWGp5nrVEtGHrSaGffBF8Zg1YCtCaH2w1qV"
+    ],
+    "allowOnlyVerifiedSources": false,
+    "schedule": {
+      "duration": 270000,
+      "startTime": 1778313939981,
+      "endTime": 1778331939982,
+      "interval": 300000,
+      "maxStartDelay": 10000
+    },
+    "memory": 0,
+    "networkRequests": 30,
+    "storage": 0,
+    "mutability": "Immutable",
+    "extra": {
+      "requirements": {
+        "assignmentStrategy": {
+          "variant": "Single"
+        },
+        "slots": 5,
+        "reward": 10000000000,
+        "minReputation": 0,
+        "runtime": "NodeJSWithBundle"
+      }
+    }
+  }
+}

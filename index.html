@@ -89,6 +89,12 @@
   /* fade for transitions */
   .fade-in { animation: fi 220ms ease-out both; }
   @keyframes fi { from { opacity:0; transform: translateY(2px); } to { opacity:1; transform:none; } }
+
+  /* compact search hero when content is below it (single-page layout) */
+  body.has-output #state-search > div { padding-top: 4rem; padding-bottom: 2rem; }
+  body.has-output #state-search h1 { font-size: 32px; }
+  body.has-output #state-search p { display: none; }
+  body.has-output #state-search > div > div:first-child { margin-bottom: 2rem; }
 </style>
 </head>
 <body class="min-h-screen bg-bg text-fg antialiased">
@@ -103,18 +109,18 @@
         <span class="mono text-[10px] text-mute">v0.1.0&minus;alpha</span>
       </div>
       <nav class="hidden md:flex items-center gap-5 mono text-[11px] text-mute">
-        <span class="text-fg">REPORT</span>
-        <span class="hover:text-fg cursor-pointer">INDEX</span>
-        <span class="hover:text-fg cursor-pointer">CORPORA</span>
-        <span class="hover:text-fg cursor-pointer">API</span>
-        <span class="hover:text-fg cursor-pointer">DOCS</span>
+        <a href="./index.html"   class="text-fg">REPORT</a>
+        <a href="./browse.html"  class="hover:text-fg cursor-pointer">INDEX</a>
+        <a href="./corpora.html" class="hover:text-fg cursor-pointer">CORPORA</a>
+        <a href="./asc.html"     class="hover:text-fg cursor-pointer">ASC</a>
+        <a href="./docs.html"    class="hover:text-fg cursor-pointer">DOCS</a>
       </nav>
     </div>
     <div class="flex items-center gap-5 mono text-[11px] text-mute">
-      <span><span class="text-fg" id="cluster">us&minus;east&minus;1</span> &middot; node 04</span>
-      <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 bg-phos"></span><span>OPERATIONAL</span></span>
+      <span><span class="text-fg" id="cluster">acurast.fleet</span> &middot; <span id="cluster-node">node --</span></span>
+      <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 bg-phos"></span><span id="cluster-status">OPERATIONAL</span></span>
       <span id="utc-clock">--:--:-- UTC</span>
-      <span class="text-fg">jordanhaus69@&hellip;</span>
+      <span class="text-fg" id="dm-identity">anon</span>
     </div>
   </div>
 </header>
@@ -193,25 +199,45 @@
         </div>
       </div>
 
-      <!-- footer meta -->
+      <!-- footer meta — populated from Supabase by bridge.js -->
       <div class="mt-24 grid grid-cols-2 md:grid-cols-4 gap-px bg-line border border-line">
         <div class="bg-bg p-4">
-          <div class="label mb-2">INDEXED CORPORA</div>
-          <div class="mono text-[18px] tabular-nums">2,418</div>
+          <div class="label mb-2">INDEXED REPORTS</div>
+          <div class="mono text-[18px] tabular-nums" id="stat-corpora">&mdash;</div>
         </div>
         <div class="bg-bg p-4">
           <div class="label mb-2">QUERIES / 24H</div>
-          <div class="mono text-[18px] tabular-nums">81,402</div>
+          <div class="mono text-[18px] tabular-nums" id="stat-queries">&mdash;</div>
         </div>
         <div class="bg-bg p-4">
           <div class="label mb-2">MEDIAN DRIFT</div>
-          <div class="mono text-[18px] tabular-nums text-amber">68.4<span class="text-mute text-[14px]">%</span></div>
+          <div class="mono text-[18px] tabular-nums text-amber" id="stat-median-drift">&mdash;</div>
         </div>
         <div class="bg-bg p-4">
-          <div class="label mb-2">LAST CORPUS REFRESH</div>
-          <div class="mono text-[18px] tabular-nums" id="last-refresh">2026&minus;05&minus;05 09:14Z</div>
+          <div class="label mb-2">LAST REPORT</div>
+          <div class="mono text-[18px] tabular-nums" id="stat-last-refresh">&mdash;</div>
         </div>
       </div>
+
+      <!-- ===== HISTORY ===== -->
+      <section id="state-history" class="mt-16 hidden">
+        <div class="flex items-baseline justify-between mb-3">
+          <h2 class="label-fg">SESSION HISTORY</h2>
+          <button id="btn-history-clear" class="mono text-[10px] text-mute hover:text-red">[CLEAR]</button>
+        </div>
+        <div class="border border-line2">
+          <div class="px-4 py-2.5 grid grid-cols-[1fr_120px_80px_120px] mono text-[10px] text-mute border-b border-line2">
+            <div>KEYWORD</div>
+            <div class="text-right">DRIFT</div>
+            <div class="text-right">CONF</div>
+            <div class="text-right">WHEN</div>
+          </div>
+          <ul id="history-list" class="divide-y divide-line2"></ul>
+        </div>
+        <p class="mono text-[10px] text-mute mt-3">
+          History is local to this device only. No accounts, no profiles. Click a row to re-render that report.
+        </p>
+      </section>
     </div>
   </section>
 
@@ -725,13 +751,20 @@ const stage = {
 };
 
 function show(state) {
-  stage.search.classList.toggle('hidden', state !== 'search');
+  // Single-page layout: search rig stays visible; calc/report stack below it.
+  // 'search' state simply hides calc + report (idle).
+  // 'calc'   state shows calc, hides report.
+  // 'report' state shows report, hides calc.
+  stage.search.classList.remove('hidden');
   stage.calc.classList.toggle('hidden',   state !== 'calc');
   stage.report.classList.toggle('hidden', state !== 'report');
   $('status-mode').textContent =
     state === 'search' ? 'IDLE' :
     state === 'calc'   ? 'CALCULATING' : 'REPORT';
   if (state === 'search') $('qinput').focus();
+  // Auto-scroll to the active stage so user sees output when scanning/reporting
+  if (state === 'calc')   stage.calc.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (state === 'report') stage.report.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 /* clock */
@@ -860,7 +893,18 @@ function nowISO() {
 }
 
 function renderReport(keyword, externalData) {
-  const data = externalData || MOCK[keyword.toLowerCase()] || DEFAULT_REPORT(keyword);
+  // Honest mode: only render when we have real data from the fleet (or cache).
+  // The MOCK + DEFAULT_REPORT objects below are kept for offline dev only —
+  // set window.DM_USE_MOCK_FALLBACK = true in DevTools to enable them locally.
+  if (!externalData) {
+    if (window.DM_USE_MOCK_FALLBACK === true) {
+      externalData = MOCK[keyword.toLowerCase()] || DEFAULT_REPORT(keyword);
+    } else {
+      console.warn('renderReport called without external data; refusing to fabricate.');
+      return;
+    }
+  }
+  const data = externalData;
   const ts = nowISO();
   const tsCompact = ts.replace(/[-:Z]/g,'').replace('T','-');
   const reportId = 'DR-' + tsCompact.slice(2,12) + '-' + fmtJobId().slice(0,4);
