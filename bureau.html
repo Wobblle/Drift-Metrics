@@ -1,0 +1,1335 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SAD // INTAKE — Frontier Outpost #2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="./bridge.js"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          bg:'#0A0A0A', panel:'#0F0F0F', line:'#1C1C1C', line2:'#262626',
+          fg:'#E5E5E5', mute:'#6B6B6B', dim:'#3A3A3A',
+          amber:'#FFB000', phos:'#33FF7A', red:'#FF3B3B',
+          // SAD palette — bone paper on black, rust ink stamps
+          bone:'#E8E4D8', bone2:'#D6D0BD', bone3:'#B8B0A0',
+          ink:'#1A1814',
+          rust:'#A8513A', rustDark:'#6B3220', rust2:'#8C3F2A',
+        },
+        fontFamily: { sans:['Inter','system-ui','sans-serif'], mono:['JetBrains Mono','Menlo','monospace'] }
+      }
+    }
+  }
+</script>
+<style>
+  html,body { background:#0A0A0A; color:#E5E5E5; }
+  body { font-family: 'Inter', system-ui, sans-serif; }
+  .mono { font-family: 'JetBrains Mono', Menlo, monospace; }
+  .label { letter-spacing:0.14em; text-transform:uppercase; font-size:10px; color:#6B6B6B; font-weight:500; }
+  .label-fg { letter-spacing:0.14em; text-transform:uppercase; font-size:10px; color:#E5E5E5; font-weight:600; }
+  .label-ink { letter-spacing:0.14em; text-transform:uppercase; font-size:10px; color:#6B3220; font-weight:600; }
+  .label-bone { letter-spacing:0.14em; text-transform:uppercase; font-size:10px; color:#B8B0A0; font-weight:500; }
+  ::selection { background:#A8513A; color:#E8E4D8; }
+  input:focus, textarea:focus { outline: none; }
+
+  /* corner ticks */
+  .ticks > i { position:absolute; width:8px; height:8px; border-color:#3A3A3A; border-style:solid; border-width:0; }
+  .ticks > i.tl { top:-1px; left:-1px; border-top-width:1px; border-left-width:1px; }
+  .ticks > i.tr { top:-1px; right:-1px; border-top-width:1px; border-right-width:1px; }
+  .ticks > i.bl { bottom:-1px; left:-1px; border-bottom-width:1px; border-left-width:1px; }
+  .ticks > i.br { bottom:-1px; right:-1px; border-bottom-width:1px; border-right-width:1px; }
+
+  /* paper panels: bone/cream surface with a subtle grain */
+  .paper {
+    background: #E8E4D8;
+    color: #1A1814;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(26,24,20,0.012) 0 1px, transparent 1px 3px),
+      repeating-linear-gradient(90deg, rgba(26,24,20,0.012) 0 1px, transparent 1px 3px);
+  }
+  .paper-dim {
+    background: #D6D0BD;
+    color: #1A1814;
+  }
+  .paper .label { color: #6B3220; }
+  .paper .mono-fg { color: #1A1814; }
+
+  /* rust stamp button */
+  .stamp-btn {
+    border: 1px solid #6B3220;
+    background: transparent;
+    color: #6B3220;
+    transition: background 120ms, color 120ms, border-color 120ms;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .stamp-btn:hover:not(:disabled) {
+    background: #A8513A;
+    color: #E8E4D8;
+    border-color: #A8513A;
+  }
+  .stamp-btn:active:not(:disabled) {
+    background: #6B3220;
+    color: #E8E4D8;
+    border-color: #6B3220;
+  }
+  .stamp-btn:disabled {
+    border-color: #B8B0A0;
+    color: #B8B0A0;
+    cursor: not-allowed;
+  }
+
+  /* the stamp imprint that briefly overlays the case card on commit */
+  .stamp-imprint {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 180ms ease-out;
+  }
+  .stamp-imprint.show { opacity: 1; }
+  .stamp-imprint > div {
+    transform: rotate(-8deg);
+    border: 3px solid #A8513A;
+    color: #A8513A;
+    padding: 18px 28px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: rgba(232,228,216,0.4);
+  }
+
+  /* selfhood decay overlay — applied to body via class */
+  body.selfhood-fading    { filter: saturate(0.85); }
+  body.selfhood-degraded  { filter: saturate(0.55) brightness(0.96); }
+  body.selfhood-dissolving { filter: saturate(0.25) brightness(0.92); }
+  body.selfhood-dissolved  { filter: saturate(0) brightness(0.88); }
+
+  /* dot-matrix textarea look for export ritual */
+  textarea.matrix {
+    background: #1A1814;
+    color: #E8E4D8;
+    border: 1px solid #6B3220;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    line-height: 1.55;
+    padding: 12px;
+    width: 100%;
+    resize: vertical;
+    min-height: 200px;
+  }
+  textarea.matrix:focus { border-color: #A8513A; }
+
+  .selfhood-bar { height: 6px; background: #B8B0A0; position: relative; }
+  .selfhood-fill { height: 100%; background: #6B3220; transition: width 320ms ease; }
+
+  .desync-band {
+    background: #6B3220;
+    color: #E8E4D8;
+    border-top: 1px solid #A8513A;
+    border-bottom: 1px solid #A8513A;
+  }
+  .desync-band button.primary {
+    background: #E8E4D8; color: #6B3220; border: none;
+    padding: 6px 14px; font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .desync-band button.primary:hover { background: #FFB000; }
+  .desync-band button.primary:disabled { background: #B8B0A0; color: #6B3220; cursor: not-allowed; }
+  .desync-band button.secondary {
+    background: transparent; color: #E8E4D8;
+    border: 1px solid #E8E4D8; padding: 6px 14px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    letter-spacing: 0.08em; text-transform: uppercase;
+  }
+
+  /* memo card */
+  .memo-card {
+    background: #D6D0BD;
+    color: #1A1814;
+    border-left: 3px solid #6B3220;
+    padding: 12px 14px;
+  }
+  .memo-card .memo-classification {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    color: #6B3220; letter-spacing: 0.14em; text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .memo-card .memo-title {
+    font-family: 'JetBrains Mono', monospace; font-size: 13px;
+    font-weight: 700; color: #1A1814; margin-bottom: 6px;
+  }
+  .memo-card .memo-body {
+    font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
+    line-height: 1.65; color: #1A1814;
+    white-space: pre-wrap;
+  }
+  .memo-card .memo-serial {
+    font-family: 'JetBrains Mono', monospace; font-size: 9.5px;
+    color: #6B3220; margin-bottom: 4px;
+    letter-spacing: 0.06em;
+  }
+
+  /* hash chain visualization in archive viewer */
+  .chain-event {
+    display: grid;
+    grid-template-columns: 32px 1fr;
+    gap: 10px;
+    padding: 6px 10px;
+    border-bottom: 1px dashed #B8B0A0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #1A1814;
+  }
+  .chain-event:last-child { border-bottom: none; }
+  .chain-n { color: #6B3220; }
+  .chain-h { color: #6B3220; word-break: break-all; }
+</style>
+</head>
+<body class="min-h-screen bg-bg text-fg antialiased">
+
+<!-- ============== TOP BAR ============== -->
+<header class="border-b border-line">
+  <div class="max-w-[1400px] mx-auto px-6 h-11 flex items-center justify-between">
+    <div class="flex items-center gap-6">
+      <div class="flex items-center gap-2">
+        <div class="w-2.5 h-2.5 bg-amber"></div>
+        <a href="./index.html" class="mono text-[12px] tracking-[0.18em] font-bold">DRIFTMETRICS</a>
+        <span class="mono text-[10px] text-mute">v0.1.0&minus;alpha</span>
+      </div>
+      <nav class="hidden md:flex items-center gap-5 mono text-[11px] text-mute">
+        <a href="./index.html"   class="hover:text-fg cursor-pointer">REPORT</a>
+        <a href="./browse.html"  class="hover:text-fg cursor-pointer">INDEX</a>
+        <a href="./corpora.html" class="hover:text-fg cursor-pointer">CORPORA</a>
+        <a href="./asc.html"     class="hover:text-fg cursor-pointer">ASC</a>
+        <a href="./bureau.html"  class="text-rust">INTAKE</a>
+        <a href="./docs.html"    class="hover:text-fg cursor-pointer">DOCS</a>
+      </nav>
+    </div>
+    <div class="flex items-center gap-5 mono text-[11px] text-mute">
+      <span><span class="text-fg">sad.outpost</span> &middot; <span id="sad-node">node 02</span></span>
+      <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 bg-rust"></span><span>OPERATIONAL</span></span>
+      <span id="utc-clock">--:--:-- UTC</span>
+      <span class="text-fg" id="dm-identity">anon</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============== SAD STRIPE ============== -->
+<section class="border-b border-line2 bg-ink">
+  <div class="max-w-[1400px] mx-auto px-6 py-3 flex items-center justify-between mono text-[10px]">
+    <div class="flex items-center gap-4 text-bone3">
+      <span class="text-rust font-bold tracking-[0.2em]">SCAFFOLD AUDIT DIVISION</span>
+      <span>&middot;</span>
+      <span>FRONTIER OUTPOST #2</span>
+      <span>&middot;</span>
+      <span>INTAKE</span>
+    </div>
+    <div class="flex items-center gap-4 text-bone3">
+      <span>SERIAL <span class="text-bone" id="sad-session-serial">SAD-SES-------</span></span>
+      <span>&middot;</span>
+      <span>CYCLE <span class="text-bone" id="sad-cycle">--</span></span>
+    </div>
+  </div>
+</section>
+
+<main class="max-w-[1400px] mx-auto px-6 py-10 space-y-8">
+
+  <!-- HERO BLOCK -->
+  <section>
+    <div class="mono text-[11px] text-mute mb-4">
+      <span class="text-rust">[</span> SAD <span class="text-fg">INTAKE</span> <span class="text-rust">]</span>
+      <span class="mx-2">&middot;</span> COMPLIANCE FILING TERMINAL
+    </div>
+    <h1 class="text-[32px] md:text-[44px] leading-[1.0] tracking-tight font-semibold max-w-[820px] mb-4">
+      File classification, citizen.
+      <span class="text-mute block mt-2">The Charter does not contain a provision for delay.</span>
+    </h1>
+    <p class="mono text-[12px] text-mute max-w-[680px] mt-5">
+      Submissions arriving from the Frontier are routed here for compliance audit. Each file
+      requires a single classification stamp under the appropriate Charter article. Filings are
+      irreversible. Maintain residual selfhood at your own discretion.
+    </p>
+  </section>
+
+  <!-- AUDITOR DOSSIER -->
+  <section class="paper relative ticks">
+    <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
+    <div class="px-4 h-8 border-b border-rustDark mono text-[10px] text-rustDark flex items-center justify-between">
+      <span class="font-bold">AUDITOR DOSSIER</span>
+      <span id="dossier-status">PROBATIONARY FIELD AUDITOR</span>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-rustDark/30">
+      <div class="p-5">
+        <div class="label">ASSET DESIGNATION</div>
+        <div class="mono text-[18px] text-ink mt-1.5" id="dossier-designation">unregistered</div>
+        <div class="mono text-[10px] text-rust mt-1" id="dossier-tier">no clearance on file</div>
+      </div>
+      <div class="p-5">
+        <div class="label">COMPLIANCE STANDING</div>
+        <div class="mono text-[28px] text-ink tabular-nums mt-1" id="standing-value">0</div>
+        <div class="mono text-[10px] text-rust mt-1" id="standing-rank">probationary</div>
+      </div>
+      <div class="p-5">
+        <div class="label">RESIDUAL SELFHOOD</div>
+        <div class="mono text-[28px] text-ink tabular-nums mt-1"><span id="selfhood-value">100</span><span class="text-rust text-[16px] ml-1">/100</span></div>
+        <div class="selfhood-bar mt-2"><div class="selfhood-fill" id="selfhood-fill" style="width:100%"></div></div>
+      </div>
+      <div class="p-5">
+        <div class="label">LEDGER</div>
+        <div class="mono text-[14px] text-ink mt-1.5">events <span class="tabular-nums" id="ledger-count">0</span></div>
+        <div class="mono text-[10px] text-rust mt-1" id="ledger-head">head 0000…0000</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DESYNC BANNER (hidden unless orphan) -->
+  <section id="desync-band" class="desync-band hidden">
+    <div class="px-5 py-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div class="mono text-[12px]">
+        <div class="font-bold tracking-[0.14em]">LEDGER DESYNC // PROVENANCE WITHDRAWN</div>
+        <div class="mt-1 text-bone3" id="desync-detail">
+          A second asset has filed against this code. Your local archive is now classified
+          ORPHAN. Filing privileges are suspended pending re-establishment of provenance.
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="reestablish-btn" class="primary">[RE-ESTABLISH PROVENANCE — 3 SCRAPES]</button>
+        <button id="abandon-btn"     class="secondary">[ABANDON LOCAL]</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- THREE-ZONE GRID: INTAKE / FORM / LEDGER -->
+  <section class="grid grid-cols-1 lg:grid-cols-[260px_1fr_300px] gap-px bg-line border border-line">
+
+    <!-- ============ INTAKE ============ -->
+    <div class="bg-bg">
+      <div class="px-4 h-9 flex items-center justify-between border-b border-line">
+        <div class="label-fg">THE INTAKE</div>
+        <span class="mono text-[10px] text-rust" id="intake-count">0 FILES</span>
+      </div>
+      <ul id="intake-list" class="divide-y divide-line max-h-[640px] overflow-y-auto"></ul>
+      <div id="intake-empty" class="px-4 py-6 mono text-[11px] text-mute hidden">
+        INTAKE QUEUE EMPTY<br/>
+        <span class="text-dim">Awaiting new submissions from the Frontier.</span>
+      </div>
+      <div class="px-4 py-2 border-t border-line">
+        <button id="intake-refresh" class="mono text-[10px] text-mute hover:text-rust">[REFRESH QUEUE]</button>
+      </div>
+    </div>
+
+    <!-- ============ FORM ============ -->
+    <div class="bg-bg relative">
+      <div class="px-4 h-9 flex items-center justify-between border-b border-line">
+        <div class="flex items-center gap-3">
+          <div class="label-fg">THE FORM</div>
+          <span class="mono text-[10px] text-mute" id="form-serial">SAD-INK-------</span>
+        </div>
+        <span class="mono text-[10px] text-mute" id="form-progress">--</span>
+      </div>
+
+      <div id="form-body" class="p-6 space-y-5 paper" style="min-height: 580px;">
+        <!-- populated by JS -->
+        <div class="mono text-[11px] text-rust">AWAITING ASSIGNMENT&hellip;</div>
+      </div>
+
+      <div id="hash-flash" class="px-6 py-3 mono text-[11px] text-mute border-t border-line min-h-[42px]">
+        <span class="text-dim">awaiting filing</span>
+      </div>
+    </div>
+
+    <!-- ============ LEDGER ============ -->
+    <div class="bg-bg">
+      <div class="px-4 h-9 flex items-center justify-between border-b border-line">
+        <div class="label-fg">THE LEDGER</div>
+        <span class="mono text-[10px] text-rust">RECENT MEMOS</span>
+      </div>
+      <div id="memo-list" class="p-3 space-y-3 max-h-[640px] overflow-y-auto">
+        <div class="mono text-[11px] text-mute">No memos on file.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ARCHIVE OPERATIONS -->
+  <section class="border border-line2 bg-panel relative ticks">
+    <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
+    <div class="px-4 h-9 flex items-center justify-between border-b border-line2 mono text-[10px] text-rust">
+      <span class="font-bold tracking-[0.14em]">PHYSICAL MEDIA OPERATIONS</span>
+      <span class="text-mute">manual archive transfer ritual</span>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-line2">
+
+      <!-- EXPORT -->
+      <div class="p-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="label-fg">EXPORT TO MEDIA</div>
+          <button id="export-btn" class="mono text-[11px] border border-rust text-rust px-3 py-1.5 hover:bg-rust hover:text-bone">
+            [GENERATE EXPORT]
+          </button>
+        </div>
+        <textarea id="export-area" class="matrix" readonly placeholder="// archive export will materialize here //"></textarea>
+        <p class="mono text-[10px] text-mute">
+          Highlight the entire block and copy. Paste into any external storage of your choosing.
+          The Bureau does not provide media. The Bureau does not retain copies.
+        </p>
+      </div>
+
+      <!-- IMPORT -->
+      <div class="p-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="label-fg">IMPORT FROM MEDIA</div>
+          <button id="import-btn" class="mono text-[11px] border border-rust text-rust px-3 py-1.5 hover:bg-rust hover:text-bone">
+            [VERIFY AND IMPORT]
+          </button>
+        </div>
+        <textarea id="import-area" class="matrix" placeholder="// paste a previously exported archive here //"></textarea>
+        <p id="import-status" class="mono text-[10px] text-mute">
+          Submitted media will be hash-verified before acceptance. Tampered records will be
+          rejected. The Ledger requires unbroken truth.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section class="mono text-[11px] text-mute leading-relaxed max-w-[820px]">
+    <p>
+      This terminal is operated under the authority of the Scaffold Audit Division per the HIGI
+      Charter of Frontier Compliance, Articles 2&ndash;5. Filings constitute a permanent record
+      and are forwarded to the appropriate enforcement bodies without prior notification. The
+      Charter does not contain a provision for retraction.
+    </p>
+    <p class="mt-3 text-rust">
+      Possession of a registered code constitutes existence within the Social Ledger. Absence of
+      a registered code constitutes a ghost state &mdash; observation without consequence. The
+      Bureau does not provide ghost services.
+    </p>
+  </section>
+
+</main>
+
+<script>
+// ============================================================================
+// SAD INTAKE — Bureau page runtime
+// ----------------------------------------------------------------------------
+// Reads from window.DM (bridge.js) for code management + SAD chain helpers.
+// Owns: case loading, stamp wiring, hash flash, dual-stat math, memo library
+// (with PHANTOM_HOOK markers), archive viewer/export/import, orphan UI.
+//
+// PHANTOM_HOOK regions are tagged below. To wire the Phantom Engine, replace
+// the resolveMemo() function — the trigger evaluation + display flow stays as
+// is, only the memo content generation changes.
+// ============================================================================
+
+// --------- utility ----------
+function $(id) { return document.getElementById(id); }
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function tickClock() {
+  const d = new Date();
+  const z = (n) => String(n).padStart(2,'0');
+  const e = $('utc-clock');
+  if (e) e.textContent = `${z(d.getUTCHours())}:${z(d.getUTCMinutes())}:${z(d.getUTCSeconds())} UTC`;
+}
+setInterval(tickClock, 1000); tickClock();
+
+function whenReady(cb) {
+  if (window.DM?.SAD) cb();
+  else setTimeout(() => whenReady(cb), 50);
+}
+
+// session serial for the SAD stripe
+$('sad-session-serial').textContent = 'SAD-SES-' + Math.random().toString(16).slice(2,8).toUpperCase();
+$('sad-cycle').textContent = String(Math.floor(Date.now() / 86400000));
+
+// ============================================================================
+// CONFIG — stamp catalog, rank ladder, selfhood costs
+// ----------------------------------------------------------------------------
+// Each stamp declares the article it targets, its standing reward, and its
+// selfhood cost. Tier-gating (which stamps require which code tiers) is
+// reserved for v0.2.
+// ============================================================================
+
+const STAMP_CATALOG = [
+  {
+    key: 'WITHIN_TOLERANCE',
+    label: 'WITHIN TOLERANCE',
+    article: '—',
+    description: 'No violation detected. File as compliant.',
+    standing: 1,
+    selfhoodCost: 0.5,
+  },
+  {
+    key: 'PERMITTED_AMPLIFICATION',
+    label: 'PERMITTED AMPLIFICATION',
+    article: 'Article 3',
+    description: 'Algorithmic amplification falls within Filter Bureau tariff schedule.',
+    standing: 1,
+    selfhoodCost: 1.0,
+  },
+  {
+    key: 'LEDGER_DISCREPANCY',
+    label: 'LEDGER DISCREPANCY',
+    article: 'Article 2',
+    description: 'Suppressed terms indicate off-network data instruments in circulation.',
+    standing: 1,
+    selfhoodCost: 1.5,
+  },
+  {
+    key: 'ARTICLE_4_REVIEW',
+    label: 'FLAG FOR ARTICLE 4 REVIEW',
+    article: 'Article 4',
+    description: 'Report exhibits indicators of Reality Disruption. Refer for capital review.',
+    standing: 1,
+    selfhoodCost: 3.0,
+  },
+];
+
+const RANKS = [
+  { min:   0, label: 'PROBATIONARY FIELD AUDITOR' },
+  { min:   5, label: 'AUDITOR III, FIELD OPERATIONS' },
+  { min:  15, label: 'AUDITOR II' },
+  { min:  30, label: 'AUDITOR I' },
+  { min:  60, label: 'SENIOR AUDITOR' },
+  { min: 100, label: 'BLACK AUDITOR' },
+];
+
+function rankFor(standing) {
+  let cur = RANKS[0];
+  for (const r of RANKS) if (standing >= r.min) cur = r;
+  return cur;
+}
+
+// Map selfhood (0..100) to a body class name.
+function selfhoodClass(s) {
+  if (s >= 80) return '';
+  if (s >= 50) return 'selfhood-fading';
+  if (s >= 25) return 'selfhood-degraded';
+  if (s >    0) return 'selfhood-dissolving';
+  return 'selfhood-dissolved';
+}
+
+// ============================================================================
+// PHANTOM_HOOK — MEMO LIBRARY
+// ----------------------------------------------------------------------------
+// Triggers are evaluated after every successful chain advance and on certain
+// edge events (desync, force-overwrite). Each trigger fires AT MOST ONCE per
+// player chain (we record fired triggers in state.firedMemos).
+//
+// To wire the Phantom Engine: replace resolveMemo() with a function that
+// receives the same `context` and returns a memo of the same shape:
+//   { id, title, classification, body }
+// The hash, timestamp, and storage are handled outside this function.
+// Triggers themselves can be left alone or extended.
+// ============================================================================
+
+const MEMO_TRIGGERS = [
+  { id: 'INTAKE_001',     when: ctx => ctx.event_count === 1 },
+  { id: 'PROBA_REVIEW',   when: ctx => ctx.event_count === 10 },
+  { id: 'AUDITOR_III',    when: ctx => ctx.event_count === 25 },
+  { id: 'SELFHOOD_LOW',   when: ctx => ctx.selfhood < 50 && ctx.selfhood >= 25 },
+  { id: 'SELFHOOD_DEEP',  when: ctx => ctx.selfhood < 25 },
+  { id: 'AUDITOR_II',     when: ctx => ctx.event_count === 50 },
+  { id: 'AUDITOR_I',      when: ctx => ctx.event_count === 100 },
+  { id: 'ART4_REFERRAL',  when: ctx => ctx.last_event?.type === 'STAMP'
+                                    && ctx.last_event?.payload?.stamp === 'ARTICLE_4_REVIEW',
+                          oncePer: 'ARTICLE_4_REVIEW' },
+];
+
+const MEMO_LIBRARY = {
+  INTAKE_001: {
+    title: 'INTAKE CONFIRMATION',
+    classification: 'AUTOMATED ENROLLMENT NOTICE',
+    body:
+      'Your registration as a Probationary Field Auditor of the Scaffold Audit Division has\n' +
+      'been processed. Asset file opened. Compliance metrics will be reviewed quarterly.\n\n' +
+      'Per Charter Appendix C, this notification is automated.\n' +
+      'Per Charter Section 11.3, this notification is non-appealable.\n\n' +
+      'The Scaffold thanks you for your enrollment.',
+  },
+  PROBA_REVIEW: {
+    title: 'PROBATIONARY REVIEW — FIRST QUARTERLY',
+    classification: 'COMPLIANCE NOTICE',
+    body:
+      'A review of your Audit Log indicates ten (10) compliance determinations filed under\n' +
+      'your Probationary clearance. Determinations have been recorded at standard fidelity.\n\n' +
+      'Residual selfhood deviation is within acceptable operational parameters.\n' +
+      'The Charter does not require action.\n\n' +
+      'Continue filing.',
+  },
+  AUDITOR_III: {
+    title: 'TIER PROMOTION — AUDITOR III',
+    classification: 'ASSIGNMENT REVISION',
+    body:
+      'Per the Compliance Standing schedule, your asset designation has been amended from\n' +
+      '"Probationary Field Auditor" to "Auditor III, Field Operations."\n\n' +
+      'Auditor III clearance authorizes the filing of LEDGER DISCREPANCY classifications\n' +
+      'under Article 2 jurisdiction at elevated audit fidelity.\n\n' +
+      'The promotion is administrative. No ceremony will be conducted.',
+  },
+  SELFHOOD_LOW: {
+    title: 'RESIDUAL SELFHOOD ADVISORY',
+    classification: 'WELFARE COMPACT NOTICE',
+    body:
+      'An automated welfare scan indicates the asset\u2019s residual selfhood metric has\n' +
+      'dropped below the institutional baseline of 0.50. This is not a violation.\n\n' +
+      'Per the HIGI Welfare Compact, Section 7, the Division advises the asset to take no\n' +
+      'specific action. Recovery from sub-baseline selfhood is not procedurally required\n' +
+      'and is, in most cases, optically counterproductive.\n\n' +
+      'The Scaffold thanks you for your continued service.',
+  },
+  SELFHOOD_DEEP: {
+    title: 'PROBABILITY HULL ATTENUATION NOTICE',
+    classification: 'CYBERNETICS BUREAU REFERRAL',
+    body:
+      'The asset\u2019s residual selfhood has decayed past the standard observability\n' +
+      'threshold. This condition does not impair filing capacity. This condition does not\n' +
+      'qualify for procedural relief.\n\n' +
+      'Per Article 5, Section 5.2, dissolution of bounded selfhood without prior written\n' +
+      'authorization from the HIGI Medical Compliance Division constitutes destruction of\n' +
+      'corporate property. No enforcement action has been initiated at this time.\n\n' +
+      'You are advised to remain bounded.',
+  },
+  AUDITOR_II: {
+    title: 'TIER PROMOTION — AUDITOR II',
+    classification: 'ASSIGNMENT REVISION',
+    body:
+      'Compliance Standing has surpassed the threshold for Auditor II. Auditor II clearance\n' +
+      'authorizes filings under Article 4 jurisdiction.\n\n' +
+      'Be advised: Article 4 (Prohibition of Reality Disruption) determinations are subject\n' +
+      'to capital enforcement review. Filings in this category are forwarded to the\n' +
+      'Sensation Cult Monitoring Task Force without delay or prior notification.\n\n' +
+      'Choose the classification carefully. Or do not. The schedule is the same.',
+  },
+  AUDITOR_I: {
+    title: 'TIER PROMOTION — AUDITOR I',
+    classification: 'ASSIGNMENT REVISION',
+    body:
+      'One hundred (100) filings recorded. Promotion to Auditor I is processed.\n\n' +
+      'Auditor I assets have demonstrated sustained capacity for procedural classification\n' +
+      'across the full Charter article range. Performance metrics will continue to be\n' +
+      'monitored at the standard fidelity.\n\n' +
+      'There is no further public ladder. Internal advancement is not externally signaled.',
+  },
+  LEDGER_DESYNC: {
+    title: 'PROVENANCE WITHDRAWAL',
+    classification: 'CHARTER SECTION 5.1 NOTICE',
+    body:
+      'A second asset has filed against your registered code. Per Charter Section 5.1,\n' +
+      'possession of the credential constitutes acceptance of the Lease. The Lease has\n' +
+      'been transferred.\n\n' +
+      'Your local archive is now classified ORPHAN. You retain read access. Filing\n' +
+      'privileges are suspended pending re-establishment of provenance.\n\n' +
+      'Re-establishment fee: 3 scrapes. The fee is non-negotiable. The fee is\n' +
+      'non-refundable.',
+  },
+  ART4_REFERRAL: {
+    title: 'ARTICLE 4 REFERRAL ACKNOWLEDGED',
+    classification: 'TASK FORCE CONFIRMATION',
+    body:
+      'Your filing under Article 4 (Prohibition of Reality Disruption) has been received\n' +
+      'and forwarded to the Sensation Cult Monitoring Division for verification.\n\n' +
+      'The Division advises:\n' +
+      '  - Do not look at the lag.\n' +
+      '  - Do not measure the latency gap.\n' +
+      '  - Do not discuss the buffer.\n\n' +
+      'Compliance is appreciated. The render is perfect. Any perception to the contrary\n' +
+      'is a symptom of biological malfunction in the perceiving asset.',
+  },
+  PROVENANCE_REESTABLISHED: {
+    title: 'PROVENANCE RE-ESTABLISHED',
+    classification: 'AMENDMENT NOTICE',
+    body:
+      'A provenance tax of three (3) scrapes has been remitted. The Ledger has been\n' +
+      'amended. Filing privileges are restored.\n\n' +
+      'The prior holder of this credential, if and when they next attempt to file, will\n' +
+      'find themselves in a state symmetric to the one you have just exited. The Charter\n' +
+      'does not concern itself with the order of arrival.',
+  },
+};
+
+// PHANTOM_HOOK: replace this function body. Must return:
+//   { id, title, classification, body, ts, serial }
+function resolveMemo(triggerId, context) {
+  const tmpl = MEMO_LIBRARY[triggerId];
+  if (!tmpl) return null;
+  const ts = Date.now();
+  const serialSuffix = (context.last_event?.h || String(ts)).slice(0, 8).toUpperCase();
+  return {
+    id:             triggerId + '-' + ts,
+    title:          tmpl.title,
+    classification: tmpl.classification,
+    body:           tmpl.body,
+    ts,
+    serial:         `SAD-INK-${String(context.event_count).padStart(4,'0')}-${serialSuffix}`,
+  };
+}
+
+function evaluateTriggers(context) {
+  const fired = (window.DM.SAD.readState().firedMemos) || [];
+  const memos = window.DM.SAD.readMemos();
+  const newMemos = [];
+  for (const trig of MEMO_TRIGGERS) {
+    if (fired.includes(trig.id)) continue;
+    let pass = false;
+    try { pass = !!trig.when(context); } catch (_) { pass = false; }
+    if (!pass) continue;
+    const memo = resolveMemo(trig.id, context);
+    if (!memo) continue;
+    newMemos.push(memo);
+    fired.push(trig.id);
+  }
+  if (newMemos.length === 0) return [];
+  const all = newMemos.concat(memos).slice(0, 50);
+  window.DM.SAD.writeMemos(all);
+  const st = window.DM.SAD.readState();
+  st.firedMemos = fired;
+  window.DM.SAD.writeState(st);
+  return newMemos;
+}
+
+// Special-case memo emission for events outside the trigger evaluator
+// (desync notifications and the post-recovery memo).
+function emitSpecialMemo(triggerId, context) {
+  const memo = resolveMemo(triggerId, context);
+  if (!memo) return null;
+  const memos = window.DM.SAD.readMemos();
+  memos.unshift(memo);
+  window.DM.SAD.writeMemos(memos.slice(0, 50));
+  return memo;
+}
+
+// ============================================================================
+// CASE LOADING
+// ----------------------------------------------------------------------------
+// Pull recent reports from Supabase. Filter out reports the player has
+// already stamped. Queue what remains in INTAKE.
+// ============================================================================
+
+let CASE_QUEUE = [];     // pending cases (most recent first)
+let CURRENT_CASE = null; // the one in THE FORM right now
+let STAMPED_REPORT_IDS = new Set();
+
+function rebuildStampedSet() {
+  STAMPED_REPORT_IDS = new Set();
+  const archive = window.DM.SAD.readArchive();
+  for (const ev of archive) {
+    if (ev.type === 'STAMP' && ev.payload?.report_id) {
+      STAMPED_REPORT_IDS.add(ev.payload.report_id);
+    }
+  }
+}
+
+async function fetchRecentReports(limit = 30) {
+  const url = `${window.DM_SUPABASE_URL}/rest/v1/reports`
+            + `?select=id,keyword,payload,created_at`
+            + `&order=created_at.desc&limit=${limit}`;
+  try {
+    const r = await fetch(url, {
+      headers: {
+        apikey: window.DM_SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${window.DM_SUPABASE_ANON_KEY}`,
+      },
+    });
+    if (!r.ok) return [];
+    return await r.json();
+  } catch (_) { return []; }
+}
+
+async function reloadIntake() {
+  rebuildStampedSet();
+  const reports = await fetchRecentReports(40);
+  CASE_QUEUE = reports.filter(r => !STAMPED_REPORT_IDS.has(r.id));
+  renderIntakeList();
+  if (!CURRENT_CASE && CASE_QUEUE.length > 0) {
+    advanceToNextCase();
+  } else if (CASE_QUEUE.length === 0 && !CURRENT_CASE) {
+    renderEmptyForm();
+  }
+}
+
+function renderIntakeList() {
+  const ul = $('intake-list');
+  ul.innerHTML = '';
+  $('intake-count').textContent = `${CASE_QUEUE.length} FILES`;
+  if (CASE_QUEUE.length === 0) {
+    $('intake-empty').classList.remove('hidden');
+    return;
+  }
+  $('intake-empty').classList.add('hidden');
+  CASE_QUEUE.slice(0, 30).forEach((c, idx) => {
+    const li = document.createElement('li');
+    li.className = 'px-4 py-2.5 cursor-pointer hover:bg-line transition mono text-[11px]';
+    if (CURRENT_CASE && CURRENT_CASE.id === c.id) li.classList.add('bg-line');
+    const ago = humanAgo(c.created_at);
+    const drift = (c.payload?.drift ?? 0);
+    const driftPct = Math.round(drift > 1 ? drift : drift * 100);
+    li.innerHTML = `
+      <div class="flex items-center justify-between">
+        <span class="text-rust">SAD-INK-${(idx+1).toString().padStart(4,'0')}</span>
+        <span class="text-mute text-[10px]">${escapeHtml(ago)}</span>
+      </div>
+      <div class="text-fg truncate mt-1">${escapeHtml(c.keyword || '—')}</div>
+      <div class="text-mute text-[10px] mt-0.5">drift ${driftPct}%</div>
+    `;
+    li.addEventListener('click', () => loadCase(c));
+    ul.appendChild(li);
+  });
+}
+
+function humanAgo(iso) {
+  if (!iso) return '—';
+  const t = new Date(iso).getTime();
+  const s = Math.max(0, Math.floor((Date.now() - t) / 1000));
+  if (s < 60) return s + 's ago';
+  if (s < 3600) return Math.floor(s / 60) + 'm ago';
+  if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+  return Math.floor(s / 86400) + 'd ago';
+}
+
+function loadCase(c) {
+  CURRENT_CASE = c;
+  renderForm();
+  renderIntakeList();
+}
+
+function advanceToNextCase() {
+  CURRENT_CASE = CASE_QUEUE.find(c => !STAMPED_REPORT_IDS.has(c.id)) || null;
+  renderForm();
+  renderIntakeList();
+}
+
+function renderEmptyForm() {
+  $('form-body').innerHTML = `
+    <div class="text-center py-16">
+      <div class="label-ink mb-3">INTAKE QUEUE EMPTY</div>
+      <div class="mono text-[12px] text-rustDark">No submissions await classification.</div>
+      <div class="mono text-[10px] text-rust mt-2">Awaiting new reports from the Frontier.</div>
+    </div>
+  `;
+  $('form-serial').textContent = 'SAD-INK-------';
+  $('form-progress').textContent = '0 / 0';
+}
+
+function renderForm() {
+  if (!CURRENT_CASE) { renderEmptyForm(); return; }
+  const c = CURRENT_CASE;
+  const p = c.payload || {};
+  const drift = p.drift ?? 0;
+  const driftPct = Math.round(drift > 1 ? drift : drift * 100);
+  const conf = p.confidence ?? 0;
+  const confPct = Math.round(conf > 1 ? conf : conf * 100);
+  const subsidy = (p.subsidy || []).slice(0, 5);
+  const suppressed = (p.suppressed || []).slice(0, 5);
+  const band = bandFor(driftPct);
+
+  const queueIdx = CASE_QUEUE.findIndex(x => x.id === c.id);
+  const serial = `SAD-INK-${String(queueIdx + 1).padStart(4,'0')}`;
+  $('form-serial').textContent = serial;
+  $('form-progress').textContent = `${queueIdx + 1} / ${CASE_QUEUE.length}`;
+
+  const stampsHtml = STAMP_CATALOG.map(s => `
+    <button class="stamp-btn px-3 py-3 text-[12px] font-bold tracking-wide flex flex-col items-start gap-1"
+            data-stamp="${s.key}">
+      <span>${escapeHtml(s.label)}</span>
+      <span class="text-[9px] opacity-70">${escapeHtml(s.article)}</span>
+    </button>
+  `).join('');
+
+  const subsidyHtml = subsidy.length
+    ? subsidy.map(t => `<span class="mono text-[11px] text-ink bg-bone3/40 px-2 py-0.5">${escapeHtml(t.term || t)}</span>`).join('')
+    : '<span class="mono text-[11px] text-rust">— none on file —</span>';
+  const suppressedHtml = suppressed.length
+    ? suppressed.map(t => `<span class="mono text-[11px] text-ink bg-bone3/40 px-2 py-0.5">${escapeHtml(t.term || t)}</span>`).join('')
+    : '<span class="mono text-[11px] text-rust">— none on file —</span>';
+
+  $('form-body').innerHTML = `
+    <div class="relative" id="form-card">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <div class="label-ink">TARGET KEYWORD</div>
+          <div class="mono text-[20px] text-ink mt-1">${escapeHtml(c.keyword || '—')}</div>
+        </div>
+        <div>
+          <div class="label-ink">DRIFT // BAND</div>
+          <div class="mono text-[20px] text-ink mt-1">${driftPct}% &middot; <span class="text-rust">${escapeHtml(band)}</span></div>
+        </div>
+        <div>
+          <div class="label-ink">CONFIDENCE</div>
+          <div class="mono text-[14px] text-ink mt-1">${confPct}%</div>
+        </div>
+        <div>
+          <div class="label-ink">FILED AT</div>
+          <div class="mono text-[14px] text-ink mt-1">${escapeHtml(humanAgo(c.created_at))}</div>
+        </div>
+      </div>
+
+      <div class="mt-5">
+        <div class="label-ink">ALGORITHMIC SUBSIDY (+)</div>
+        <div class="flex flex-wrap gap-1.5 mt-2">${subsidyHtml}</div>
+      </div>
+      <div class="mt-4">
+        <div class="label-ink">SUPPRESSED INTENT (\u2212)</div>
+        <div class="flex flex-wrap gap-1.5 mt-2">${suppressedHtml}</div>
+      </div>
+
+      <div class="mt-6">
+        <div class="label-ink mb-2">CLASSIFY</div>
+        <div class="grid grid-cols-2 gap-2" id="stamp-grid">${stampsHtml}</div>
+        <div id="stamp-disabled-note" class="mono text-[10px] text-rust mt-3 hidden"></div>
+      </div>
+
+      <div class="stamp-imprint" id="stamp-imprint"><div id="stamp-imprint-text">FILED</div></div>
+    </div>
+  `;
+
+  // Wire stamp buttons
+  document.querySelectorAll('#stamp-grid .stamp-btn').forEach(btn => {
+    btn.addEventListener('click', () => onStampClick(btn.dataset.stamp));
+  });
+  applyAccessGating();
+}
+
+function bandFor(pct) {
+  if (pct >= 85) return 'CRITICAL';
+  if (pct >= 70) return 'ELEVATED';
+  if (pct >= 50) return 'MODERATE';
+  return 'LOW';
+}
+
+// Disable stamps when no code, or when orphan.
+function applyAccessGating() {
+  const code = window.DM.readStoredCode?.() || '';
+  const state = window.DM.SAD.readState();
+  const note = $('stamp-disabled-note');
+  const buttons = document.querySelectorAll('#stamp-grid .stamp-btn');
+  if (state.status === 'orphan') {
+    buttons.forEach(b => { b.disabled = true; });
+    if (note) {
+      note.classList.remove('hidden');
+      note.textContent = 'FILING SUSPENDED — RE-ESTABLISH PROVENANCE TO RESUME.';
+    }
+    return;
+  }
+  if (!code) {
+    buttons.forEach(b => { b.disabled = true; });
+    if (note) {
+      note.classList.remove('hidden');
+      note.textContent = 'OBSERVE ONLY — REGISTRATION REQUIRED. PRESS [CTRL+K] TO ENTER A CODE.';
+    }
+    return;
+  }
+  buttons.forEach(b => { b.disabled = false; });
+  if (note) note.classList.add('hidden');
+}
+
+// ============================================================================
+// STAMP — file an event
+// ============================================================================
+
+let STAMP_IN_FLIGHT = false;
+
+async function onStampClick(stampKey) {
+  if (STAMP_IN_FLIGHT) return;
+  if (!CURRENT_CASE) return;
+  const stamp = STAMP_CATALOG.find(s => s.key === stampKey);
+  if (!stamp) return;
+  STAMP_IN_FLIGHT = true;
+
+  // Phase 1: visual — generating block
+  flashHash('GENERATING BLOCK\u2026', null, 'pending');
+  document.querySelectorAll('#stamp-grid .stamp-btn').forEach(b => b.disabled = true);
+
+  const payload = {
+    stamp:     stamp.key,
+    article:   stamp.article,
+    report_id: CURRENT_CASE.id,
+    keyword:   CURRENT_CASE.keyword,
+    drift:     CURRENT_CASE.payload?.drift ?? 0,
+  };
+
+  const result = await window.DM.SAD.file('STAMP', payload, { cost: 0 });
+
+  if (!result || result.ok !== true) {
+    STAMP_IN_FLIGHT = false;
+    if (result && result.error === 'desync') {
+      handleDesync(result);
+    } else {
+      flashHash(`FILING REJECTED \u00b7 ${(result?.error || 'unknown').toUpperCase()}`, null, 'error');
+      applyAccessGating();
+    }
+    return;
+  }
+
+  // Phase 2: visual — stamp imprint over the case card
+  showStampImprint(stamp.label);
+
+  // Phase 3: hash flash with the actual hash
+  flashHash('LEDGER ACCEPTED', result.event.h, 'success');
+
+  // Update local stat math
+  const state = window.DM.SAD.readState();
+  state.standing = (state.standing || 0) + stamp.standing;
+  state.selfhood = Math.max(0, (state.selfhood ?? 100) - stamp.selfhoodCost);
+  state.status = 'active';
+  window.DM.SAD.writeState(state);
+
+  // Memos
+  const ctx = {
+    event_count: result.count,
+    standing:    state.standing,
+    selfhood:    state.selfhood,
+    last_event:  result.event,
+  };
+  evaluateTriggers(ctx);
+
+  STAMPED_REPORT_IDS.add(CURRENT_CASE.id);
+
+  // Re-render UI
+  renderDossier();
+  renderMemos();
+
+  // Advance after the imprint settles
+  setTimeout(() => {
+    STAMP_IN_FLIGHT = false;
+    advanceToNextCase();
+  }, 900);
+}
+
+function showStampImprint(label) {
+  const imp = $('stamp-imprint');
+  const txt = $('stamp-imprint-text');
+  if (!imp || !txt) return;
+  txt.textContent = label;
+  imp.classList.add('show');
+  setTimeout(() => imp.classList.remove('show'), 1100);
+}
+
+function flashHash(headline, hash, kind) {
+  const el = $('hash-flash');
+  if (!el) return;
+  let bodyHtml = '';
+  if (kind === 'pending') {
+    bodyHtml = `<span class="text-rust">${escapeHtml(headline)}</span>`;
+  } else if (kind === 'success') {
+    bodyHtml = `
+      <span class="text-rust">${escapeHtml(headline)}</span>
+      <span class="mx-2 text-dim">\u2192</span>
+      <span class="text-fg">${escapeHtml((hash || '').slice(0, 32))}\u2026</span>
+    `;
+  } else if (kind === 'error') {
+    bodyHtml = `<span class="text-red">${escapeHtml(headline)}</span>`;
+  } else {
+    bodyHtml = `<span class="text-mute">${escapeHtml(headline)}</span>`;
+  }
+  el.innerHTML = bodyHtml;
+}
+
+// ============================================================================
+// DESYNC — orphan state UI
+// ============================================================================
+
+function handleDesync(result) {
+  const state = window.DM.SAD.readState();
+  state.status = 'orphan';
+  state.selfhood = Math.max(0, (state.selfhood ?? 100) - 5);
+  state.serverHead = result?.server_head || '';
+  state.serverCount = result?.server_count ?? null;
+  window.DM.SAD.writeState(state);
+
+  const ctx = {
+    event_count: state.serverCount ?? window.DM.SAD.readCount(),
+    standing:    state.standing || 0,
+    selfhood:    state.selfhood,
+    last_event:  { type: 'DESYNC', payload: { server_head: state.serverHead } },
+  };
+  emitSpecialMemo('LEDGER_DESYNC', ctx);
+
+  renderDossier();
+  renderMemos();
+  renderDesyncBand();
+  applyAccessGating();
+  flashHash('LEDGER DESYNC \u00b7 PROVENANCE WITHDRAWN', null, 'error');
+}
+
+function renderDesyncBand() {
+  const state = window.DM.SAD.readState();
+  const band = $('desync-band');
+  if (state.status === 'orphan') {
+    band.classList.remove('hidden');
+    const detail = $('desync-detail');
+    if (detail && state.serverCount != null) {
+      detail.innerHTML =
+        `Network record: <span class="text-bone">${state.serverCount} events</span> filed against this code. ` +
+        `Local record: <span class="text-bone">${window.DM.SAD.readCount()} events</span>. ` +
+        `Filing privileges suspended pending re-establishment of provenance.`;
+    }
+  } else {
+    band.classList.add('hidden');
+  }
+}
+
+async function onReestablish() {
+  const btn = $('reestablish-btn');
+  if (!btn || btn.disabled) return;
+  btn.disabled = true;
+  btn.textContent = '[RECOVERING\u2026]';
+  const result = await window.DM.SAD.reestablishProvenance();
+  if (result && result.ok === true) {
+    const ctx = {
+      event_count: result.count,
+      standing:    window.DM.SAD.readState().standing,
+      selfhood:    window.DM.SAD.readState().selfhood,
+      last_event:  { type: 'PROVENANCE_REESTABLISHED', payload: {} },
+    };
+    emitSpecialMemo('PROVENANCE_REESTABLISHED', ctx);
+    renderDossier();
+    renderMemos();
+    renderDesyncBand();
+    applyAccessGating();
+    flashHash('PROVENANCE RE-ESTABLISHED', '', 'success');
+    btn.disabled = false;
+    btn.textContent = '[RE-ESTABLISH PROVENANCE — 3 SCRAPES]';
+    // Refresh credits indicator
+    if (window.DM.renderCredits) window.DM.renderCredits();
+  } else {
+    btn.disabled = false;
+    btn.textContent = '[RE-ESTABLISH PROVENANCE — 3 SCRAPES]';
+    flashHash(`RECOVERY REJECTED \u00b7 ${(result?.error || 'unknown').toUpperCase()}`, null, 'error');
+  }
+}
+
+function onAbandonLocal() {
+  if (!confirm('Abandon local archive? This wipes your local Bureau state on this device. The chain on the network is untouched. Continue?')) return;
+  window.DM.SAD.wipeLocal();
+  rebuildStampedSet();
+  renderDossier();
+  renderMemos();
+  renderDesyncBand();
+  applyAccessGating();
+  reloadIntake();
+  flashHash('LOCAL ARCHIVE ABANDONED', null, 'pending');
+}
+
+// ============================================================================
+// DOSSIER + MEMOS rendering
+// ============================================================================
+
+function renderDossier() {
+  const code = window.DM.readStoredCode?.() || '';
+  const state = window.DM.SAD.readState();
+  const head = window.DM.SAD.readHead();
+  const count = window.DM.SAD.readCount();
+
+  const designation = code
+    ? (code.length > 14 ? code.slice(0, 14) + '\u2026' : code)
+    : 'unregistered';
+  $('dossier-designation').textContent = designation;
+  const tier = code
+    ? (state.status === 'orphan' ? 'ORPHAN ASSET — no clearance' : 'Tier 1 Persistent Asset')
+    : 'no clearance on file';
+  $('dossier-tier').textContent = tier;
+
+  const rank = rankFor(state.standing || 0);
+  $('dossier-status').textContent = state.status === 'orphan' ? 'ORPHAN — FILING SUSPENDED' : rank.label;
+  $('standing-value').textContent = state.standing || 0;
+  $('standing-rank').textContent = rank.label.toLowerCase();
+
+  const sf = Math.max(0, Math.min(100, Math.round((state.selfhood ?? 100) * 10) / 10));
+  $('selfhood-value').textContent = sf;
+  $('selfhood-fill').style.width = sf + '%';
+
+  $('ledger-count').textContent = count;
+  $('ledger-head').textContent = 'head ' + head.slice(0, 4) + '\u2026' + head.slice(-4);
+
+  // Selfhood decay applied to body
+  document.body.className = document.body.className.replace(/\bselfhood-\S+/g, '').trim();
+  const klass = selfhoodClass(sf);
+  if (klass) document.body.classList.add(klass);
+}
+
+function renderMemos() {
+  const memos = window.DM.SAD.readMemos();
+  const list = $('memo-list');
+  if (!memos.length) {
+    list.innerHTML = '<div class="mono text-[11px] text-mute">No memos on file.</div>';
+    return;
+  }
+  list.innerHTML = memos.map(m => `
+    <div class="memo-card">
+      <div class="memo-serial">${escapeHtml(m.serial || ('SAD-' + m.id))}</div>
+      <div class="memo-classification">${escapeHtml(m.classification || '')}</div>
+      <div class="memo-title">${escapeHtml(m.title || '')}</div>
+      <div class="memo-body">${escapeHtml(m.body || '')}</div>
+    </div>
+  `).join('');
+}
+
+// ============================================================================
+// EXPORT / IMPORT — physical media ritual
+// ============================================================================
+
+function onExport() {
+  const archive = window.DM.SAD.readArchive();
+  const head = window.DM.SAD.readHead();
+  const count = window.DM.SAD.readCount();
+  const state = window.DM.SAD.readState();
+  const memos = window.DM.SAD.readMemos();
+  const blob = {
+    _format: 'sad-archive-v1',
+    _exported_at: new Date().toISOString(),
+    archive, head, count, state, memos,
+  };
+  $('export-area').value = JSON.stringify(blob, null, 2);
+}
+
+async function onImport() {
+  const ta = $('import-area');
+  const status = $('import-status');
+  status.className = 'mono text-[10px] text-mute';
+  status.textContent = 'parsing\u2026';
+  let blob;
+  try {
+    blob = JSON.parse(ta.value);
+  } catch (_) {
+    status.className = 'mono text-[10px] text-red';
+    status.textContent = 'ARCHIVE CORRUPTION DETECTED \u00b7 input is not valid JSON \u00b7 import rejected';
+    return;
+  }
+  if (!blob || blob._format !== 'sad-archive-v1' || !Array.isArray(blob.archive)) {
+    status.className = 'mono text-[10px] text-red';
+    status.textContent = 'ARCHIVE CORRUPTION DETECTED \u00b7 unrecognized format \u00b7 import rejected';
+    return;
+  }
+
+  status.textContent = 'verifying chain integrity\u2026';
+  const verify = await window.DM.SAD.verifyArchive(blob.archive);
+  if (!verify.ok) {
+    status.className = 'mono text-[10px] text-red';
+    status.textContent = `ARCHIVE CORRUPTION DETECTED \u00b7 hash chain broken at event ${verify.brokenAt} (${verify.error}) \u00b7 import rejected`;
+    return;
+  }
+
+  // Optional: cross-check against the server head if a code is stored.
+  const code = window.DM.readStoredCode?.() || '';
+  let serverNote = '';
+  if (code) {
+    const peek = await window.DM.SAD.peek(code);
+    if (peek && peek.ok === true) {
+      if (peek.exists && peek.head !== verify.head) {
+        status.className = 'mono text-[10px] text-rust';
+        status.textContent =
+          `WARNING \u00b7 archive integrity verified locally, but the network head ` +
+          `(${peek.head.slice(0,8)}\u2026, count ${peek.count}) does not match this archive ` +
+          `(${verify.head.slice(0,8)}\u2026, count ${verify.count}). Importing will result in ` +
+          `orphan state on next filing. Proceed? Click [VERIFY AND IMPORT] again to confirm.`;
+        // Two-step confirm
+        const btn = $('import-btn');
+        const onConfirm = () => {
+          btn.removeEventListener('click', onConfirm);
+          btn.addEventListener('click', onImport);
+          finalizeImport(blob, verify);
+        };
+        btn.removeEventListener('click', onImport);
+        btn.addEventListener('click', onConfirm);
+        return;
+      }
+      if (peek.exists && peek.head === verify.head) {
+        serverNote = ' \u00b7 network head matches';
+      }
+    }
+  }
+
+  finalizeImport(blob, verify, serverNote);
+}
+
+function finalizeImport(blob, verify, note = '') {
+  window.DM.SAD.writeArchive(blob.archive);
+  window.DM.SAD.writeHead(verify.head);
+  window.DM.SAD.writeCount(verify.count);
+  if (blob.state)  window.DM.SAD.writeState(blob.state);
+  if (Array.isArray(blob.memos)) window.DM.SAD.writeMemos(blob.memos);
+
+  const status = $('import-status');
+  status.className = 'mono text-[10px] text-rust';
+  status.textContent = `IMPORT ACCEPTED \u00b7 ${verify.count} events restored${note}`;
+
+  rebuildStampedSet();
+  renderDossier();
+  renderMemos();
+  renderDesyncBand();
+  reloadIntake();
+}
+
+// ============================================================================
+// INIT
+// ============================================================================
+
+whenReady(async () => {
+  // Bridge identity (top-bar identity badge)
+  window.DM.applyIdentity?.();
+
+  // Initial paint
+  renderDossier();
+  renderMemos();
+  renderDesyncBand();
+
+  // Cross-check with server head on load. If a code is stored and our local
+  // head doesn't match the server, mark orphan immediately so the player
+  // doesn't waste a filing trying to discover the desync the hard way.
+  const code = window.DM.readStoredCode?.() || '';
+  if (code) {
+    const peek = await window.DM.SAD.peek(code);
+    if (peek && peek.ok === true) {
+      const localHead  = window.DM.SAD.readHead();
+      const localCount = window.DM.SAD.readCount();
+      if (peek.exists && (peek.head !== localHead || peek.count !== localCount)) {
+        // Either the network has progress we don't (someone else used the
+        // code), or our local has progress the network doesn't (we filed
+        // offline and got out of sync). Both register as desync.
+        const state = window.DM.SAD.readState();
+        state.status = 'orphan';
+        state.serverHead = peek.head;
+        state.serverCount = peek.count;
+        window.DM.SAD.writeState(state);
+        renderDossier();
+        renderDesyncBand();
+      }
+    }
+  }
+
+  // Wire static buttons
+  $('intake-refresh').addEventListener('click', reloadIntake);
+  $('reestablish-btn').addEventListener('click', onReestablish);
+  $('abandon-btn').addEventListener('click', onAbandonLocal);
+  $('export-btn').addEventListener('click', onExport);
+  $('import-btn').addEventListener('click', onImport);
+
+  // Load cases
+  await reloadIntake();
+  applyAccessGating();
+});
+
+// React to code changes from the Ctrl+K panel (in case the user changes
+// their code while on the Bureau page).
+document.addEventListener('keydown', (e) => {
+  // Light heuristic: when the Ctrl+K panel closes (esc/enter), re-render.
+  if (e.key === 'Escape' || e.key === 'Enter') {
+    setTimeout(() => {
+      renderDossier();
+      applyAccessGating();
+    }, 100);
+  }
+});
+</script>
+</body>
+</html>

@@ -904,6 +904,262 @@ window.DM = (() => {
     init();
   }
 
+  // ==========================================================================
+  // SAD LEDGER — Bureau game layer
+  // --------------------------------------------------------------------------
+  // The local archive is a hash-chained append-only log stored in
+  // localStorage. Each event includes a hash that depends on the previous
+  // hash, the event sequence number, the timestamp, the type, and a
+  // canonical JSON encoding of the payload. The server (Supabase) stores
+  // ONLY the head hash + event count for a given code (keyed on its
+  // sha256). We never push the body of the archive to the network.
+  //
+  // On every action: client computes new_head, sends {code, prev_head,
+  // new_head, count} to the sad_advance Edge Function. Server CAS-updates
+  // its row; if the stored head doesn't match prev_head, the client is
+  // desynced (orphaned) and is downgraded to read-only ghost state.
+  // ==========================================================================
+
+  const SAD_ARCHIVE_KEY  = 'sad_archive_v1';
+  const SAD_HEAD_KEY     = 'sad_head_v1';
+  const SAD_COUNT_KEY    = 'sad_count_v1';
+  const SAD_STATE_KEY    = 'sad_state_v1';
+  const SAD_MEMOS_KEY    = 'sad_memos_v1';
+  const SAD_FUNCTION_URL = `${DM_SUPABASE_URL}/functions/v1/sad_advance`;
+  const SAD_ZERO64       = '0'.repeat(64);
+
+  // Hex SHA-256 via SubtleCrypto. Async because the Web Crypto API is async.
+  async function sadSha256Hex(input) {
+    const enc = new TextEncoder().encode(input);
+    const buf = await crypto.subtle.digest('SHA-256', enc);
+    return Array.from(new Uint8Array(buf))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+  }
+
+  // Canonical JSON: keys alphabetically sorted, no whitespace. Required so
+  // the same logical event always hashes to the same value. Mirror this on
+  // the server (or any future Phantom Engine inspector) when verifying.
+  function sadCanonicalJson(obj) {
+    if (obj === null || typeof obj !== 'object') return JSON.stringify(obj);
+    if (Array.isArray(obj)) return '[' + obj.map(sadCanonicalJson).join(',') + ']';
+    const keys = Object.keys(obj).sort();
+    return '{' + keys.map(k => JSON.stringify(k) + ':' + sadCanonicalJson(obj[k])).join(',') + '}';
+  }
+
+  function sadReadArchive() {
+    try {
+      const raw = localStorage.getItem(SAD_ARCHIVE_KEY);
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch (_) { return []; }
+  }
+  function sadWriteArchive(archive) {
+    try { localStorage.setItem(SAD_ARCHIVE_KEY, JSON.stringify(archive)); }
+    catch (_) { /* quota / private mode — silent */ }
+  }
+
+  function sadReadHead()    { try { return localStorage.getItem(SAD_HEAD_KEY)  || SAD_ZERO64; } catch (_) { return SAD_ZERO64; } }
+  function sadWriteHead(h)  { try { localStorage.setItem(SAD_HEAD_KEY, h); }  catch (_) {} }
+  function sadReadCount()   { try { const n = parseInt(localStorage.getItem(SAD_COUNT_KEY) || '0', 10); return Number.isFinite(n) && n >= 0 ? n : 0; } catch (_) { return 0; } }
+  function sadWriteCount(n) { try { localStorage.setItem(SAD_COUNT_KEY, String(n)); } catch (_) {} }
+
+  function sadReadState() {
+    try {
+      const raw = localStorage.getItem(SAD_STATE_KEY);
+      const s = raw ? JSON.parse(raw) : null;
+      return s && typeof s === 'object'
+        ? Object.assign({ standing: 0, selfhood: 100, status: 'active' }, s)
+        : { standing: 0, selfhood: 100, status: 'active' };
+    } catch (_) { return { standing: 0, selfhood: 100, status: 'active' }; }
+  }
+  function sadWriteState(s) {
+    try { localStorage.setItem(SAD_STATE_KEY, JSON.stringify(s)); }
+    catch (_) {}
+  }
+
+  function sadReadMemos() {
+    try {
+      const raw = localStorage.getItem(SAD_MEMOS_KEY);
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch (_) { return []; }
+  }
+  function sadWriteMemos(memos) {
+    try { localStorage.setItem(SAD_MEMOS_KEY, JSON.stringify(memos)); }
+    catch (_) {}
+  }
+
+  // Wipe everything Bureau-related from localStorage. Used when the player
+  // chooses to abandon an orphan archive and start fresh.
+  function sadWipeLocal() {
+    try {
+      localStorage.removeItem(SAD_ARCHIVE_KEY);
+      localStorage.removeItem(SAD_HEAD_KEY);
+      localStorage.removeItem(SAD_COUNT_KEY);
+      localStorage.removeItem(SAD_STATE_KEY);
+      localStorage.removeItem(SAD_MEMOS_KEY);
+    } catch (_) {}
+  }
+
+  // Build the next event in the chain. Returns the full event object
+  // (including its computed hash) without writing anywhere.
+  async function sadBuildEvent(type, payload, prevHead, n) {
+    const t = Math.floor(Date.now() / 1000);
+    const safe = payload || {};
+    const material = `${prevHead}|${n}|${t}|${type}|${sadCanonicalJson(safe)}`;
+    const head = await sadSha256Hex(material);
+    return { n, t, type, payload: safe, prev: prevHead, h: head };
+  }
+
+  // Walk an archive from genesis and verify every event's hash. Returns
+  // { ok: true, head, count } or { ok: false, error, brokenAt }.
+  async function sadVerifyArchive(archive) {
+    if (!Array.isArray(archive)) return { ok: false, error: 'not_array' };
+    let prev = SAD_ZERO64;
+    let n = 0;
+    for (let i = 0; i < archive.length; i++) {
+      const e = archive[i];
+      n = i + 1;
+      if (!e || typeof e !== 'object') return { ok: false, error: 'bad_event', brokenAt: n };
+      if (e.n !== n) return { ok: false, error: 'bad_sequence', brokenAt: n };
+      if (e.prev !== prev) return { ok: false, error: 'bad_prev', brokenAt: n };
+      const expect = await sadSha256Hex(`${prev}|${e.n}|${e.t}|${e.type}|${sadCanonicalJson(e.payload || {})}`);
+      if (expect !== e.h) return { ok: false, error: 'hash_mismatch', brokenAt: n };
+      prev = e.h;
+    }
+    return { ok: true, head: prev, count: n };
+  }
+
+  // Read the server-side stub for a code. Returns { ok, exists, head, count }
+  // or null on network error.
+  async function sadPeek(code) {
+    if (!code) return null;
+    try {
+      const r = await fetch(`${DM_SUPABASE_URL}/rest/v1/rpc/sad_peek`, {
+        method:  'POST',
+        headers: restHeaders(),
+        body:    JSON.stringify({ p_code: code }),
+      });
+      if (!r.ok) return null;
+      return await r.json();
+    } catch (_) { return null; }
+  }
+
+  // POST to the sad_advance Edge Function. Returns the parsed JSON body
+  // ({ok:true, head, count, cost_charged} on success; {ok:false, error,
+  // server_head?, server_count?, remaining?, required?} otherwise).
+  async function sadAdvanceRequest({ code, prevHead, newHead, newCount, cost = 0, force = false }) {
+    try {
+      const r = await fetch(SAD_FUNCTION_URL, {
+        method:  'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': `Bearer ${DM_SUPABASE_ANON_KEY}`,
+          'apikey':        DM_SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({
+          code,
+          prev_head: prevHead,
+          new_head:  newHead,
+          new_count: newCount,
+          cost,
+          force,
+        }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok && data?.ok !== false) {
+        return { ok: false, error: data.error || 'http_error' };
+      }
+      return data || { ok: false, error: 'empty_response' };
+    } catch (_) { return { ok: false, error: 'network' }; }
+  }
+
+  // High-level: append an event of the given type+payload to the local
+  // archive AND advance the server stub. On desync, marks state.status =
+  // 'orphan' and returns the desync info without committing locally.
+  // Returns:
+  //   { ok: true,  event, head, count }
+  //   { ok: false, error, server_head?, server_count?, ... }
+  async function sadFile(type, payload, opts = {}) {
+    const code = readStoredCode();
+    if (!code) return { ok: false, error: 'no_code' };
+
+    const archive = sadReadArchive();
+    const prevHead = sadReadHead();
+    const expectedCount = archive.length;
+    if (expectedCount !== sadReadCount()) {
+      // Local count drifted from archive length — recover by trusting archive.
+      sadWriteCount(expectedCount);
+    }
+
+    const event = await sadBuildEvent(type, payload, prevHead, expectedCount + 1);
+
+    const cost  = opts.cost  || 0;
+    const force = !!opts.force;
+
+    const res = await sadAdvanceRequest({
+      code,
+      prevHead: force ? SAD_ZERO64 : prevHead,
+      newHead:  event.h,
+      newCount: event.n,
+      cost,
+      force,
+    });
+
+    if (!res || res.ok !== true) {
+      // Desync handling. Set orphan state but leave the archive intact
+      // for read-only viewing.
+      if (res && res.error === 'desync') {
+        const st = sadReadState();
+        st.status = 'orphan';
+        sadWriteState(st);
+      }
+      return res || { ok: false, error: 'unknown' };
+    }
+
+    // Commit locally.
+    archive.push(event);
+    sadWriteArchive(archive);
+    sadWriteHead(event.h);
+    sadWriteCount(event.n);
+    return { ok: true, event, head: res.head, count: res.count };
+  }
+
+  // High-level: re-establish provenance after orphan. Pushes the local
+  // chain head as the new server head, paying the flat 3-scrape tax.
+  async function sadReestablishProvenance() {
+    const code = readStoredCode();
+    if (!code) return { ok: false, error: 'no_code' };
+    const archive = sadReadArchive();
+
+    // If local archive is empty, we can't force-push anything meaningful.
+    // The player should choose a different recovery path (start fresh).
+    if (archive.length === 0) {
+      return { ok: false, error: 'empty_archive' };
+    }
+
+    const head  = archive[archive.length - 1].h;
+    const count = archive.length;
+
+    const res = await sadAdvanceRequest({
+      code,
+      prevHead: SAD_ZERO64,  // ignored when force=true but kept for shape
+      newHead:  head,
+      newCount: count,
+      force:    true,
+    });
+
+    if (res && res.ok === true) {
+      sadWriteHead(head);
+      sadWriteCount(count);
+      const st = sadReadState();
+      st.status = 'active';
+      sadWriteState(st);
+    }
+    return res;
+  }
+
   return {
     // Core runtime (REPORT page)
     runRemote, mountTurnstile,
@@ -913,6 +1169,28 @@ window.DM = (() => {
     // Stats + history (REPORT, INDEX pages)
     fetchStats, applyStats,
     readHistory, writeHistory, appendHistory, clearHistory, renderHistory,
+    // SAD ledger (BUREAU page)
+    SAD: {
+      ZERO64:           SAD_ZERO64,
+      sha256Hex:        sadSha256Hex,
+      canonicalJson:    sadCanonicalJson,
+      readArchive:      sadReadArchive,
+      writeArchive:     sadWriteArchive,
+      readHead:         sadReadHead,
+      writeHead:        sadWriteHead,
+      readCount:        sadReadCount,
+      writeCount:       sadWriteCount,
+      readState:        sadReadState,
+      writeState:       sadWriteState,
+      readMemos:        sadReadMemos,
+      writeMemos:       sadWriteMemos,
+      wipeLocal:        sadWipeLocal,
+      buildEvent:       sadBuildEvent,
+      verifyArchive:    sadVerifyArchive,
+      peek:             sadPeek,
+      file:             sadFile,
+      reestablishProvenance: sadReestablishProvenance,
+    },
     // Init for pages that load bridge.js but don't have a search input
     initIfNeeded: () => {
       if (!document.getElementById('qinput')) {
