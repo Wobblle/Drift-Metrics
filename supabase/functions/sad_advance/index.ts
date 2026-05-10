@@ -105,7 +105,7 @@ Deno.serve(async (req: Request) => {
   // send chain_nonce; default to the legacy sentinel (zero string).
   const legacyCode = (body.code ?? "").toString().trim();
   const anchorCode = (body.anchor_code ?? legacyCode).toString().trim();
-  const activeCode = (body.active_code ?? legacyCode || anchorCode).toString().trim();
+  const activeCode = (body.active_code ?? (legacyCode || anchorCode)).toString().trim();
   const chainNonce = (body.chain_nonce ?? "0".repeat(32)).toString().trim().toLowerCase();
 
   const newHead   = (body.new_head  ?? "").toString().trim().toLowerCase();

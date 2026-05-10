@@ -95,6 +95,7 @@
   body.has-output #state-search h1 { font-size: 32px; }
   body.has-output #state-search p { display: none; }
   body.has-output #state-search > div > div:first-child { margin-bottom: 2rem; }
+  body.has-output #onboarding-strip { display: none; }
 </style>
 </head>
 <body class="min-h-screen bg-bg text-fg antialiased">
@@ -149,6 +150,37 @@
         and what people are actually saying. Recent reports are cached and free to view; running
         a fresh scan against the fleet requires an access code.
       </p>
+
+      <!-- ===== FIRST-TIME ONBOARDING STRIP =====
+           Quietly visible to everyone; it doesn't intrude on returning users
+           because the search rig sits below it and the strip itself is restrained. -->
+      <div id="onboarding-strip" class="mt-10 grid grid-cols-1 md:grid-cols-4 gap-px bg-line border border-line">
+        <a href="./browse.html" class="group bg-bg p-4 hover:bg-panel transition-colors">
+          <div class="label mb-2 group-hover:text-amber">01 // BROWSE</div>
+          <div class="mono text-[12px] text-fg leading-snug">
+            Read the public report INDEX. Cached, free to view, no code required.
+          </div>
+        </a>
+        <a href="./docs.html" class="group bg-bg p-4 hover:bg-panel transition-colors">
+          <div class="label mb-2 group-hover:text-amber">02 // UNDERSTAND</div>
+          <div class="mono text-[12px] text-fg leading-snug">
+            Read the DOCS. What we measure, why it matters, how to read a report.
+          </div>
+        </a>
+        <a href="./bureau.html" class="group bg-bg p-4 hover:bg-panel transition-colors">
+          <div class="label mb-2 group-hover:text-amber">03 // PARTICIPATE</div>
+          <div class="mono text-[12px] text-fg leading-snug">
+            Step into the BUREAU. Stamp drift reports, accumulate a tamper-evident dossier.
+          </div>
+        </a>
+        <button type="button" id="onboarding-applycode" class="group bg-bg p-4 hover:bg-panel transition-colors text-left">
+          <div class="label mb-2 group-hover:text-amber">04 // SCAN</div>
+          <div class="mono text-[12px] text-fg leading-snug">
+            Have a code? Apply it to run fresh scans against the Acurast fleet.
+            <span class="block mt-1 text-mute">[CTRL+K]</span>
+          </div>
+        </button>
+      </div>
 
       <!-- search rig -->
       <div class="mt-14 relative ticks">
@@ -802,6 +834,19 @@ document.querySelectorAll('.sample').forEach(b => {
     runQuery(b.dataset.q);
   });
 });
+
+// Onboarding: 04 // SCAN tile opens the Ctrl+K code panel.
+const onboardingApply = $('onboarding-applycode');
+if (onboardingApply) {
+  onboardingApply.addEventListener('click', () => {
+    if (window.DM_panel && typeof window.DM_panel.open === 'function') {
+      window.DM_panel.open();
+    } else {
+      // Fallback: synthesize a Ctrl+K so bridge.js's listener fires.
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }));
+    }
+  });
+}
 
 $('btn-new').addEventListener('click', () => {
   input.value = '';

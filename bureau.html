@@ -259,6 +259,40 @@
     </p>
   </section>
 
+  <!-- ===== PREMISE CARD =====
+       Shown to first-time visitors (no code stored). Hidden as soon as a code
+       is applied — returning users skip past it. Plain-English explainer for
+       people who arrived via the INDEX onboarding strip and don't know what
+       the Bureau is yet. -->
+  <section id="premise-card" class="paper-dim relative ticks hidden">
+    <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
+    <div class="px-5 h-9 border-b border-rustDark mono text-[10px] text-rustDark flex items-center justify-between">
+      <span class="font-bold tracking-[0.14em]">WHAT IS THIS?</span>
+      <span class="text-rust">[ FIRST-TIME VISITORS ]</span>
+    </div>
+    <div class="p-6 space-y-4">
+      <p class="mono text-[12px] text-ink leading-[1.7] max-w-[760px]">
+        You are looking at the intake desk for <span class="font-bold">Social Adequacy Determination</span> &mdash;
+        a compliance audit ritual built on top of DriftMetrics. The Frontier publishes drift reports.
+        The Bureau stamps them. Your filings accumulate into a tamper-evident dossier held on this
+        device, with a hash receipt held by the Ledger.
+      </p>
+      <p class="mono text-[12px] text-ink leading-[1.7] max-w-[760px]">
+        Standing rises with throughput. Selfhood erodes with influence. The two ladders are independent
+        and both apply. Everything visible to you right now is free to read. To file classifications of
+        your own, you need an access code &mdash; without one, you may observe.
+      </p>
+      <div class="flex flex-wrap gap-3 pt-2">
+        <a href="./docs.html" class="mono text-[11px] border border-rust bg-bone text-rust px-4 py-2 hover:bg-rust hover:text-bone">[ READ THE DOCS ]</a>
+        <button type="button" id="premise-apply-code" class="mono text-[11px] border border-rust bg-rust text-bone px-4 py-2 hover:bg-rustDark hover:border-rustDark">[ APPLY A CODE ]</button>
+        <a href="./browse.html" class="mono text-[11px] border border-rustDark text-rustDark px-4 py-2 hover:bg-rustDark hover:text-bone">[ BROWSE CACHED REPORTS ]</a>
+      </div>
+      <p class="mono text-[10px] text-rustDark mt-2">
+        Codes are universal across the Asleepius ecosystem. Possession-based, no accounts. Lose it, lose it.
+      </p>
+    </div>
+  </section>
+
   <!-- AUDITOR DOSSIER -->
   <section class="paper relative ticks">
     <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
@@ -2249,6 +2283,7 @@ whenReady(async () => {
   renderMemos();
   renderDesyncBand();
   renderCodex();
+  refreshPremiseCard();
 
   // Cross-check with server head on load against the (anchor, chain_nonce)
   // identity. Surface orphan state immediately so we don't burn a filing to
@@ -2303,6 +2338,15 @@ whenReady(async () => {
     }
   });
 
+  // PREMISE CARD wiring
+  $('premise-apply-code')?.addEventListener('click', () => {
+    if (window.DM_panel && typeof window.DM_panel.open === 'function') {
+      window.DM_panel.open();
+    } else {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }));
+    }
+  });
+
   // CODEX wiring
   $('codex-stack-btn').addEventListener('click', onStackCode);
   $('codex-stack-input').addEventListener('keydown', (e) => {
@@ -2325,6 +2369,19 @@ whenReady(async () => {
   applyAccessGating();
 });
 
+// Premise card: shown only when there's no stored code yet. Once a code is
+// applied (now or later), it disappears and stays gone.
+function refreshPremiseCard() {
+  const card = document.getElementById('premise-card');
+  if (!card) return;
+  const code = window.DM.readStoredCode?.() || '';
+  if (code) {
+    card.classList.add('hidden');
+  } else {
+    card.classList.remove('hidden');
+  }
+}
+
 // React to code changes from the Ctrl+K panel (in case the user changes
 // their code while on the Bureau page). The Ctrl+K code is treated as a
 // candidate for the codex; if there's no codex yet, ensureCodex will
@@ -2336,6 +2393,7 @@ document.addEventListener('keydown', (e) => {
       window.DM.SAD.ensureCodex();
       renderDossier();
       renderCodex();
+      refreshPremiseCard();
       await checkActiveDepletion();
       applyAccessGating();
     }, 100);
