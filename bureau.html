@@ -307,6 +307,91 @@
     </div>
   </section>
 
+  <!-- THE CODEX — accumulated credential dossier, source of weight + trust -->
+  <section class="paper relative ticks" id="codex-section">
+    <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
+    <div class="px-4 h-9 border-b border-rustDark mono text-[10px] flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="text-rustDark font-bold tracking-[0.14em]">THE CODEX</span>
+        <span class="text-rust" id="codex-count">— codes</span>
+      </div>
+      <div class="flex items-center gap-4 text-rustDark">
+        <span>WEIGHT <span id="codex-weight" class="font-bold tabular-nums">×1</span></span>
+        <span>TRUST  <span id="codex-trust"  class="font-bold tabular-nums">0.00</span></span>
+        <button id="codex-hide" class="text-rust hover:text-rustDark">[HIDE]</button>
+      </div>
+    </div>
+
+    <!-- Depletion banner (hidden unless active code is depleted) -->
+    <div id="codex-depletion" class="hidden px-4 py-3 bg-rust text-bone mono text-[11px] flex items-center justify-between">
+      <div>
+        <span class="font-bold tracking-[0.14em]">ACTIVE CREDENTIAL EXHAUSTED</span>
+        <span class="opacity-90"> · stack a new code to continue filing</span>
+      </div>
+    </div>
+
+    <!-- Codex list -->
+    <ul id="codex-list" class="divide-y divide-rustDark/30"></ul>
+
+    <!-- Stack new code form -->
+    <div class="border-t border-rustDark/30 p-4 flex flex-col md:flex-row md:items-center gap-3">
+      <label class="label-ink whitespace-nowrap">STACK NEW CODE</label>
+      <input id="codex-stack-input" type="text" maxlength="40"
+             placeholder="DRF-XXXX-XXXX"
+             class="flex-1 mono text-[12px] bg-bone2 border border-rustDark px-3 py-2 text-ink uppercase placeholder-rustDark/60 focus:border-rust" />
+      <button id="codex-stack-btn"
+              class="mono text-[11px] border border-rust bg-rust text-bone px-4 py-2 hover:bg-rustDark hover:border-rustDark disabled:opacity-50 disabled:cursor-not-allowed">
+        [+ STACK]
+      </button>
+    </div>
+    <div id="codex-stack-status" class="px-4 pb-3 mono text-[10px] text-rustDark hidden"></div>
+
+    <!-- Codex export / import — separate from chain export -->
+    <div class="border-t border-rustDark/30 p-4">
+      <div class="flex items-center justify-between mb-2">
+        <span class="label-ink">PHYSICAL MEDIA · CODEX</span>
+        <div class="flex gap-2">
+          <button id="codex-export-btn" class="mono text-[10px] border border-rustDark text-rustDark px-3 py-1 hover:bg-rustDark hover:text-bone">
+            [GENERATE EXPORT]
+          </button>
+          <button id="codex-import-btn" class="mono text-[10px] border border-rustDark text-rustDark px-3 py-1 hover:bg-rustDark hover:text-bone">
+            [VERIFY AND IMPORT]
+          </button>
+        </div>
+      </div>
+      <textarea id="codex-export-area" class="matrix" placeholder="// the codex is a portable artifact — export it, carry it, future apps will read it //"></textarea>
+      <p class="mono text-[10px] text-rustDark mt-2">
+        The codex is a separate artifact from the chain archive. The chain references the codex
+        by hash; without both, neither verifies. The Charter does not bind the two for you.
+      </p>
+    </div>
+  </section>
+
+  <!-- DISPATCH PANEL — file a fresh keyword inquiry from the Bureau -->
+  <section class="border border-line2 bg-panel relative ticks">
+    <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
+    <div class="px-4 h-9 flex items-center justify-between border-b border-line2">
+      <div class="flex items-center gap-3">
+        <span class="label-fg">DISPATCH</span>
+        <span class="mono text-[10px] text-rust">file a fresh inquiry</span>
+      </div>
+      <span id="dispatch-gate" class="mono text-[10px] text-mute">unlocked</span>
+    </div>
+    <div class="p-4 flex flex-col md:flex-row md:items-center gap-3">
+      <label class="label-fg whitespace-nowrap">TARGET KEYWORD</label>
+      <input id="dispatch-input" type="text" maxlength="120" placeholder="phrase, brand, idea, name…"
+             class="flex-1 mono text-[13px] bg-bg border border-line2 px-3 py-2 text-fg placeholder-mute focus:border-rust" />
+      <button id="dispatch-btn"
+              class="mono text-[11px] border border-rust text-rust px-4 py-2 hover:bg-rust hover:text-bone disabled:opacity-50 disabled:cursor-not-allowed">
+        [DISPATCH]
+      </button>
+    </div>
+    <div id="dispatch-status" class="px-4 pb-3 mono text-[10px] text-mute">
+      Records a chain event in the Ledger and opens the inquiry in a new tab. The scrape
+      tariff is collected by Intake at the point of submission.
+    </div>
+  </section>
+
   <!-- THREE-ZONE GRID: INTAKE / FORM / LEDGER -->
   <section class="grid grid-cols-1 lg:grid-cols-[260px_1fr_300px] gap-px bg-line border border-line">
 
@@ -399,6 +484,25 @@
     </div>
   </section>
 
+  <!-- CASE JOURNAL — paginated archive viewer with chain visualization -->
+  <section class="border border-line2 bg-panel relative ticks" id="journal-section">
+    <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
+    <div class="px-4 h-9 flex items-center justify-between border-b border-line2">
+      <div class="flex items-center gap-3">
+        <span class="label-fg">CASE JOURNAL</span>
+        <span class="mono text-[10px] text-rust" id="journal-count">0 events</span>
+      </div>
+      <button id="journal-toggle" class="mono text-[10px] text-rust hover:text-fg">[EXPAND]</button>
+    </div>
+    <div id="journal-body" class="hidden">
+      <div id="journal-list" class="p-3"></div>
+      <div class="px-4 py-2 border-t border-line2 mono text-[10px] text-mute flex items-center justify-between">
+        <span>Each entry is bound to the previous by SHA-256. Tampering breaks the chain.</span>
+        <span id="journal-head" class="text-rust"></span>
+      </div>
+    </div>
+  </section>
+
   <!-- ABOUT -->
   <section class="mono text-[11px] text-mute leading-relaxed max-w-[820px]">
     <p>
@@ -415,6 +519,50 @@
   </section>
 
 </main>
+
+<!-- DEEP-FILE ANNOTATION MODAL (hidden by default) -->
+<div id="deepfile-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 backdrop-blur-sm" style="display:none">
+  <div class="paper relative ticks max-w-[640px] w-[92vw]">
+    <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
+    <div class="px-4 h-9 border-b border-rustDark flex items-center justify-between">
+      <div class="mono text-[11px] text-rustDark font-bold tracking-[0.14em]">DEEP-FILE ANNOTATION</div>
+      <div class="mono text-[10px] text-rustDark">PERMANENT &middot; 1 SCRAPE</div>
+    </div>
+    <div class="p-5 space-y-4">
+      <div>
+        <div class="label-ink">CASE</div>
+        <div id="deepfile-case" class="mono text-[14px] text-ink mt-1">—</div>
+      </div>
+      <div>
+        <div class="flex items-center justify-between">
+          <div class="label-ink">OFFICIAL ANNOTATION</div>
+          <span class="mono text-[10px] text-rustDark"><span id="deepfile-charcount">0</span> / 280</span>
+        </div>
+        <textarea id="deepfile-note" maxlength="280" rows="5"
+                  class="w-full mt-2 bg-bone2 border border-rustDark text-ink mono text-[12px] p-3 leading-relaxed focus:border-rust"
+                  placeholder="State your professional determination. The annotation will be hashed into the chain and bound to the asset record permanently."></textarea>
+        <p class="mono text-[10px] text-rustDark mt-2">
+          Annotations cannot be retracted, edited, or sealed. The Charter does not provide a
+          mechanism for editing the past.
+        </p>
+      </div>
+      <div class="flex items-center justify-end gap-2 pt-2">
+        <button id="deepfile-cancel" class="mono text-[11px] border border-rustDark text-rustDark px-4 py-2 hover:bg-rustDark hover:text-bone">
+          [CANCEL]
+        </button>
+        <button id="deepfile-submit" class="mono text-[11px] border border-rust bg-rust text-bone px-4 py-2 hover:bg-rustDark hover:border-rustDark disabled:opacity-50">
+          [FILE — 1 SCRAPE]
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AUDIO TOGGLE (bottom-right floating control) -->
+<div class="fixed bottom-4 right-4 z-40 flex items-center gap-2 mono text-[10px] text-mute bg-panel border border-line2 px-3 py-1.5">
+  <span>AUDIO</span>
+  <button id="audio-toggle" class="text-rust hover:text-fg" title="Toggle bureau sound cues">[ON]</button>
+</div>
 
 <script>
 // ============================================================================
@@ -459,6 +607,10 @@ $('sad-cycle').textContent = String(Math.floor(Date.now() / 86400000));
 // reserved for v0.2.
 // ============================================================================
 
+// Tier gates are expressed in Compliance Standing thresholds. A given stamp
+// or action is unlocked when state.standing >= minStanding. Promotions in
+// the rank ladder are tied to the same numbers, so the AUDITOR_III memo
+// fires at the same moment LEDGER_DISCREPANCY unlocks. Symmetric by design.
 const STAMP_CATALOG = [
   {
     key: 'WITHIN_TOLERANCE',
@@ -467,6 +619,7 @@ const STAMP_CATALOG = [
     description: 'No violation detected. File as compliant.',
     standing: 1,
     selfhoodCost: 0.5,
+    minStanding: 0,
   },
   {
     key: 'PERMITTED_AMPLIFICATION',
@@ -475,6 +628,7 @@ const STAMP_CATALOG = [
     description: 'Algorithmic amplification falls within Filter Bureau tariff schedule.',
     standing: 1,
     selfhoodCost: 1.0,
+    minStanding: 0,
   },
   {
     key: 'LEDGER_DISCREPANCY',
@@ -483,6 +637,7 @@ const STAMP_CATALOG = [
     description: 'Suppressed terms indicate off-network data instruments in circulation.',
     standing: 1,
     selfhoodCost: 1.5,
+    minStanding: 10,
   },
   {
     key: 'ARTICLE_4_REVIEW',
@@ -491,22 +646,49 @@ const STAMP_CATALOG = [
     description: 'Report exhibits indicators of Reality Disruption. Refer for capital review.',
     standing: 1,
     selfhoodCost: 3.0,
+    minStanding: 25,
   },
 ];
 
+// Other actions (not stamps).
+const ACTION_GATES = {
+  DEEP_FILE: { minStanding: 10, scrapeCost: 1, standing: 2, selfhoodCost: 2.0 },
+  DISPATCH:  { minStanding:  0, scrapeCost: 0, standing: 0, selfhoodCost: 0.5 },
+};
+
 const RANKS = [
   { min:   0, label: 'PROBATIONARY FIELD AUDITOR' },
-  { min:   5, label: 'AUDITOR III, FIELD OPERATIONS' },
-  { min:  15, label: 'AUDITOR II' },
-  { min:  30, label: 'AUDITOR I' },
-  { min:  60, label: 'SENIOR AUDITOR' },
-  { min: 100, label: 'BLACK AUDITOR' },
+  { min:  10, label: 'AUDITOR III, FIELD OPERATIONS' },
+  { min:  25, label: 'AUDITOR II' },
+  { min:  50, label: 'AUDITOR I' },
+  { min: 100, label: 'SENIOR AUDITOR' },
+  { min: 250, label: 'BLACK AUDITOR' },
 ];
 
 function rankFor(standing) {
   let cur = RANKS[0];
   for (const r of RANKS) if (standing >= r.min) cur = r;
   return cur;
+}
+
+// Returns {ok, reason} for whether an action is permitted given current
+// state. Used by both the stamp grid and the DEEP-FILE/DISPATCH buttons.
+function tierGate(action, state) {
+  const standing = state.standing || 0;
+  if (state.status === 'orphan') return { ok: false, reason: 'orphan' };
+  if (action === 'DEEP_FILE') {
+    if (standing < ACTION_GATES.DEEP_FILE.minStanding) return { ok: false, reason: 'standing', need: ACTION_GATES.DEEP_FILE.minStanding };
+    return { ok: true };
+  }
+  if (action === 'DISPATCH') {
+    if (standing < ACTION_GATES.DISPATCH.minStanding) return { ok: false, reason: 'standing', need: ACTION_GATES.DISPATCH.minStanding };
+    return { ok: true };
+  }
+  // Stamps
+  const s = STAMP_CATALOG.find(x => x.key === action);
+  if (!s) return { ok: false, reason: 'unknown' };
+  if (standing < s.minStanding) return { ok: false, reason: 'standing', need: s.minStanding };
+  return { ok: true };
 }
 
 // Map selfhood (0..100) to a body class name.
@@ -532,17 +714,17 @@ function selfhoodClass(s) {
 // Triggers themselves can be left alone or extended.
 // ============================================================================
 
+// Triggers fire AT MOST ONCE per chain (state.firedMemos), with the
+// exception of ART4_REFERRAL which fires once per Article 4 stamp via
+// the resolveMemo special case below.
 const MEMO_TRIGGERS = [
   { id: 'INTAKE_001',     when: ctx => ctx.event_count === 1 },
-  { id: 'PROBA_REVIEW',   when: ctx => ctx.event_count === 10 },
-  { id: 'AUDITOR_III',    when: ctx => ctx.event_count === 25 },
+  { id: 'PROBA_REVIEW',   when: ctx => ctx.event_count >= 10 },
+  { id: 'AUDITOR_III',    when: ctx => (ctx.standing || 0) >= 10 },
+  { id: 'AUDITOR_II',     when: ctx => (ctx.standing || 0) >= 25 },
+  { id: 'AUDITOR_I',      when: ctx => (ctx.standing || 0) >= 50 },
   { id: 'SELFHOOD_LOW',   when: ctx => ctx.selfhood < 50 && ctx.selfhood >= 25 },
   { id: 'SELFHOOD_DEEP',  when: ctx => ctx.selfhood < 25 },
-  { id: 'AUDITOR_II',     when: ctx => ctx.event_count === 50 },
-  { id: 'AUDITOR_I',      when: ctx => ctx.event_count === 100 },
-  { id: 'ART4_REFERRAL',  when: ctx => ctx.last_event?.type === 'STAMP'
-                                    && ctx.last_event?.payload?.stamp === 'ARTICLE_4_REVIEW',
-                          oncePer: 'ARTICLE_4_REVIEW' },
 ];
 
 const MEMO_LIBRARY = {
@@ -655,7 +837,74 @@ const MEMO_LIBRARY = {
       'find themselves in a state symmetric to the one you have just exited. The Charter\n' +
       'does not concern itself with the order of arrival.',
   },
+  DEEP_FILE_RECEIVED: {
+    title: 'DEEP-FILE RECEIVED',
+    classification: 'PERMANENT DOSSIER NOTICE',
+    body:
+      'Your annotated deep-file has been bound to the asset record at full audit fidelity.\n' +
+      'Annotations submitted under deep-file authority are not subject to retraction or\n' +
+      'amendment. The Charter does not provide a mechanism for editing the past.\n\n' +
+      'Personal commentary attached to a Charter filing is, by definition, evidence. It\n' +
+      'will be referenced in any subsequent enforcement determination involving this\n' +
+      'asset, in this lifetime or any successor.',
+  },
+  DISPATCH_RECEIVED: {
+    title: 'INQUIRY DISPATCHED',
+    classification: 'INTAKE FORWARDING NOTICE',
+    body:
+      'The Bureau has registered your request for a fresh compliance scan. Processing\n' +
+      'will be carried out by the Frontier collection apparatus. Results will materialize\n' +
+      'in the public Ledger if they materialize at all.\n\n' +
+      'The Charter does not guarantee return on inquiry. Inquirers are advised that any\n' +
+      'finding is the property of the Scaffold and not of the inquirer.',
+  },
+  CODEX_EXPANDED: {
+    title: 'CODEX EXPANSION NOTICE',
+    classification: 'CHARTER SECTION 5.4 NOTICE',
+    body:
+      'A new credential has been bound to your dossier under Charter Section 5.4\n' +
+      '(Accumulation of Tenure). The Ledger now recognizes the expanded set under\n' +
+      'your asset designation.\n\n' +
+      'Per the Tenure Schedule, your filing weight is amended. The schedule applies\n' +
+      'to all subsequent determinations, including those filed under prior credentials\n' +
+      'within this dossier.\n\n' +
+      'The Charter does not provide a mechanism for disavowal of bound credentials.\n' +
+      'The Ledger does not forget what has been bound.',
+  },
+  WEIGHT_THRESHOLD: {
+    title: 'TENURE THRESHOLD ADVISORY',
+    classification: 'AUDIT FIDELITY RECALIBRATION',
+    body:
+      'Your accumulated tenure has crossed a Charter Section 5.4 threshold. Filings\n' +
+      'entered under this asset designation now carry recalibrated authority within\n' +
+      'consensus aggregation.\n\n' +
+      'This is not a promotion. Promotions are tied to Compliance Standing.\n' +
+      'This is a recalibration of audit fidelity. The two ladders are independent.\n' +
+      'Both apply.\n\n' +
+      'Continue filing.',
+  },
+  CREDENTIAL_EXHAUSTED: {
+    title: 'CREDENTIAL EXHAUSTION NOTICE',
+    classification: 'TARIFF SCHEDULE NOTICE',
+    body:
+      'The active credential under your asset designation has reached zero remaining\n' +
+      'tariff. Filing privileges are suspended pending the binding of a successor\n' +
+      'credential.\n\n' +
+      'The exhausted credential remains in your dossier as a matter of historical\n' +
+      'record. The Ledger does not unbind the spent. Tenure accumulated under the\n' +
+      'exhausted credential continues to apply.\n\n' +
+      'You may remit a successor credential at your convenience. The Bureau does not\n' +
+      'extend deadlines. The Bureau does not provide successor credentials.',
+  },
 };
+
+// Memos that fire on a specific event rather than a once-per-chain threshold.
+// These are emitted directly via emitSpecialMemo() from the action handlers.
+const SPECIAL_MEMOS = [
+  'LEDGER_DESYNC', 'PROVENANCE_REESTABLISHED',
+  'ART4_REFERRAL', 'DEEP_FILE_RECEIVED', 'DISPATCH_RECEIVED',
+  'CODEX_EXPANDED', 'WEIGHT_THRESHOLD', 'CREDENTIAL_EXHAUSTED',
+];
 
 // PHANTOM_HOOK: replace this function body. Must return:
 //   { id, title, classification, body, ts, serial }
@@ -837,13 +1086,34 @@ function renderForm() {
   $('form-serial').textContent = serial;
   $('form-progress').textContent = `${queueIdx + 1} / ${CASE_QUEUE.length}`;
 
-  const stampsHtml = STAMP_CATALOG.map(s => `
-    <button class="stamp-btn px-3 py-3 text-[12px] font-bold tracking-wide flex flex-col items-start gap-1"
-            data-stamp="${s.key}">
-      <span>${escapeHtml(s.label)}</span>
-      <span class="text-[9px] opacity-70">${escapeHtml(s.article)}</span>
+  const state = window.DM.SAD.readState();
+  const stampsHtml = STAMP_CATALOG.map(s => {
+    const gate = tierGate(s.key, state);
+    const locked = !gate.ok && gate.reason === 'standing';
+    const lockBadge = locked
+      ? `<span class="text-[9px] mt-0.5 text-rust">▣ standing &ge; ${s.minStanding} required</span>`
+      : '';
+    return `
+      <button class="stamp-btn px-3 py-3 text-[12px] font-bold tracking-wide flex flex-col items-start gap-1 ${locked ? 'opacity-50' : ''}"
+              data-stamp="${s.key}">
+        <span>${escapeHtml(s.label)}</span>
+        <span class="text-[9px] opacity-70">${escapeHtml(s.article)}</span>
+        ${lockBadge}
+      </button>
+    `;
+  }).join('');
+
+  const deepGate = tierGate('DEEP_FILE', state);
+  const deepLocked = !deepGate.ok && deepGate.reason === 'standing';
+  const deepBtnHtml = `
+    <button id="deepfile-btn"
+            class="stamp-btn px-3 py-3 text-[12px] font-bold tracking-wide flex flex-col items-start gap-1 ${deepLocked ? 'opacity-50' : ''}"
+            data-action="DEEP_FILE">
+      <span>DEEP-FILE WITH ANNOTATION</span>
+      <span class="text-[9px] opacity-70">1 scrape &middot; permanent &middot; +2 standing</span>
+      ${deepLocked ? `<span class="text-[9px] mt-0.5 text-rust">\u25a3 standing \u2265 ${ACTION_GATES.DEEP_FILE.minStanding} required</span>` : ''}
     </button>
-  `).join('');
+  `;
 
   const subsidyHtml = subsidy.length
     ? subsidy.map(t => `<span class="mono text-[11px] text-ink bg-bone3/40 px-2 py-0.5">${escapeHtml(t.term || t)}</span>`).join('')
@@ -883,8 +1153,12 @@ function renderForm() {
       </div>
 
       <div class="mt-6">
-        <div class="label-ink mb-2">CLASSIFY</div>
+        <div class="flex items-center justify-between mb-2">
+          <div class="label-ink">CLASSIFY</div>
+          <div class="mono text-[10px] text-rustDark" id="form-weight-note">weight ×1 applied</div>
+        </div>
         <div class="grid grid-cols-2 gap-2" id="stamp-grid">${stampsHtml}</div>
+        <div class="mt-2">${deepBtnHtml}</div>
         <div id="stamp-disabled-note" class="mono text-[10px] text-rust mt-3 hidden"></div>
       </div>
 
@@ -896,6 +1170,9 @@ function renderForm() {
   document.querySelectorAll('#stamp-grid .stamp-btn').forEach(btn => {
     btn.addEventListener('click', () => onStampClick(btn.dataset.stamp));
   });
+  // Wire DEEP-FILE button
+  const deepBtn = document.getElementById('deepfile-btn');
+  if (deepBtn) deepBtn.addEventListener('click', () => onDeepFileClick());
   applyAccessGating();
 }
 
@@ -906,30 +1183,163 @@ function bandFor(pct) {
   return 'LOW';
 }
 
-// Disable stamps when no code, or when orphan.
+// Apply gating to stamp buttons + DEEP-FILE button. Three reasons a button
+// might be disabled: no code, orphan state, or insufficient standing for the
+// specific action. Each surfaces its own visual.
 function applyAccessGating() {
   const code = window.DM.readStoredCode?.() || '';
   const state = window.DM.SAD.readState();
+  const codex = window.DM.SAD.readCodex();
+  const activeCode = codex.length ? codex[codex.length - 1].code : code;
+  const activeStatus = codex.length ? codex[codex.length - 1].status : null;
+  const depleted = activeStatus === 'depleted' || (ACTIVE_BALANCE === 0);
   const note = $('stamp-disabled-note');
-  const buttons = document.querySelectorAll('#stamp-grid .stamp-btn');
+  const stampButtons = document.querySelectorAll('#stamp-grid .stamp-btn');
+  const deepBtn = document.getElementById('deepfile-btn');
+
+  // Global locks first: orphan / no code / depleted active code.
   if (state.status === 'orphan') {
-    buttons.forEach(b => { b.disabled = true; });
+    stampButtons.forEach(b => { b.disabled = true; });
+    if (deepBtn) deepBtn.disabled = true;
     if (note) {
       note.classList.remove('hidden');
       note.textContent = 'FILING SUSPENDED — RE-ESTABLISH PROVENANCE TO RESUME.';
     }
+    updateDispatchGate(state, activeCode, depleted);
     return;
   }
-  if (!code) {
-    buttons.forEach(b => { b.disabled = true; });
+  if (!activeCode) {
+    stampButtons.forEach(b => { b.disabled = true; });
+    if (deepBtn) deepBtn.disabled = true;
     if (note) {
       note.classList.remove('hidden');
       note.textContent = 'OBSERVE ONLY — REGISTRATION REQUIRED. PRESS [CTRL+K] TO ENTER A CODE.';
     }
+    updateDispatchGate(state, activeCode, depleted);
     return;
   }
-  buttons.forEach(b => { b.disabled = false; });
+  if (depleted) {
+    stampButtons.forEach(b => { b.disabled = true; });
+    if (deepBtn) deepBtn.disabled = true;
+    if (note) {
+      note.classList.remove('hidden');
+      note.textContent = 'ACTIVE CREDENTIAL EXHAUSTED — STACK A NEW CODE TO CONTINUE.';
+    }
+    updateDispatchGate(state, activeCode, depleted);
+    return;
+  }
+
+  // Per-action tier gates.
+  stampButtons.forEach(b => {
+    const gate = tierGate(b.dataset.stamp, state);
+    b.disabled = !gate.ok;
+  });
+  if (deepBtn) {
+    const gate = tierGate('DEEP_FILE', state);
+    deepBtn.disabled = !gate.ok;
+  }
   if (note) note.classList.add('hidden');
+  updateDispatchGate(state, activeCode, depleted);
+}
+
+function updateDispatchGate(state, code, depleted) {
+  const btn = $('dispatch-btn');
+  const lbl = $('dispatch-gate');
+  if (!btn || !lbl) return;
+  if (!code) {
+    btn.disabled = true;
+    lbl.className = 'mono text-[10px] text-rust';
+    lbl.textContent = 'registration required';
+    return;
+  }
+  if (state.status === 'orphan') {
+    btn.disabled = true;
+    lbl.className = 'mono text-[10px] text-rust';
+    lbl.textContent = 'orphan — provenance required';
+    return;
+  }
+  if (depleted) {
+    btn.disabled = true;
+    lbl.className = 'mono text-[10px] text-rust';
+    lbl.textContent = 'credential exhausted';
+    return;
+  }
+  btn.disabled = false;
+  lbl.className = 'mono text-[10px] text-mute';
+  lbl.textContent = 'unlocked';
+}
+
+// ============================================================================
+// STAT MATH — apply codex weight to standing rewards and selfhood costs
+// ----------------------------------------------------------------------------
+// A high-weight (large codex) auditor gains standing FASTER and erodes
+// SLOWER. Both effects compound the effort of accumulating credentials.
+// Returns the updated state and the weight that was applied.
+// ============================================================================
+
+function currentWeight() {
+  const codex = window.DM.SAD.readCodex();
+  return window.DM.SAD.codexWeight(codex.length);
+}
+
+function applyStatChanges(baseStanding, baseSelfhoodCost) {
+  const weight = currentWeight();
+  const state  = window.DM.SAD.readState();
+  state.standing = (state.standing || 0) + (baseStanding * weight);
+  const cost = Math.max(0.1, baseSelfhoodCost / weight);
+  state.selfhood = Math.max(0, (state.selfhood ?? 100) - cost);
+  state.status = 'active';
+  window.DM.SAD.writeState(state);
+  return { state, weight, costApplied: cost, standingApplied: baseStanding * weight };
+}
+
+// Track prior weight so we can detect threshold crossings for memos.
+function readPriorWeight() {
+  return window.DM.SAD.readState().last_weight || 1;
+}
+function writePriorWeight(w) {
+  const s = window.DM.SAD.readState();
+  s.last_weight = w;
+  window.DM.SAD.writeState(s);
+}
+
+const WEIGHT_THRESHOLDS = [2, 3, 5, 8, 10];
+
+// Run after every successful action: emit codex-related memos, check
+// depletion, refresh codex render.
+async function postActionHooks({ eventType, eventResult, weightAtStart }) {
+  // Threshold crossing on weight.
+  const weightAfter = currentWeight();
+  if (weightAfter > weightAtStart) {
+    for (const thresh of WEIGHT_THRESHOLDS) {
+      if (weightAtStart < thresh && weightAfter >= thresh) {
+        emitSpecialMemo('WEIGHT_THRESHOLD', {
+          event_count: eventResult.count,
+          standing:    window.DM.SAD.readState().standing,
+          selfhood:    window.DM.SAD.readState().selfhood,
+          last_event:  Object.assign({}, eventResult.event, {
+            payload: Object.assign({}, eventResult.event.payload || {}, { weight: weightAfter }),
+          }),
+        });
+      }
+    }
+  }
+  writePriorWeight(weightAfter);
+
+  // Special memo for STACK events.
+  if (eventType === 'STACK') {
+    emitSpecialMemo('CODEX_EXPANDED', {
+      event_count: eventResult.count,
+      standing:    window.DM.SAD.readState().standing,
+      selfhood:    window.DM.SAD.readState().selfhood,
+      last_event:  eventResult.event,
+    });
+  }
+
+  // After any filing, peek the active code to see if it has been exhausted.
+  await checkActiveDepletion();
+  renderCodex();
+  renderMemos();
 }
 
 // ============================================================================
@@ -943,10 +1353,13 @@ async function onStampClick(stampKey) {
   if (!CURRENT_CASE) return;
   const stamp = STAMP_CATALOG.find(s => s.key === stampKey);
   if (!stamp) return;
+  const stateGate = window.DM.SAD.readState();
+  const gate = tierGate(stamp.key, stateGate);
+  if (!gate.ok) return;
   STAMP_IN_FLIGHT = true;
 
-  // Phase 1: visual — generating block
   flashHash('GENERATING BLOCK\u2026', null, 'pending');
+  playSound('stamp');
   document.querySelectorAll('#stamp-grid .stamp-btn').forEach(b => b.disabled = true);
 
   const payload = {
@@ -965,40 +1378,36 @@ async function onStampClick(stampKey) {
       handleDesync(result);
     } else {
       flashHash(`FILING REJECTED \u00b7 ${(result?.error || 'unknown').toUpperCase()}`, null, 'error');
+      playSound('reject');
       applyAccessGating();
     }
     return;
   }
 
-  // Phase 2: visual — stamp imprint over the case card
   showStampImprint(stamp.label);
-
-  // Phase 3: hash flash with the actual hash
   flashHash('LEDGER ACCEPTED', result.event.h, 'success');
+  playSound('accept');
 
-  // Update local stat math
-  const state = window.DM.SAD.readState();
-  state.standing = (state.standing || 0) + stamp.standing;
-  state.selfhood = Math.max(0, (state.selfhood ?? 100) - stamp.selfhoodCost);
-  state.status = 'active';
-  window.DM.SAD.writeState(state);
+  const weightAtStart = currentWeight();
+  const { state } = applyStatChanges(stamp.standing, stamp.selfhoodCost);
 
-  // Memos
   const ctx = {
     event_count: result.count,
     standing:    state.standing,
     selfhood:    state.selfhood,
     last_event:  result.event,
   };
+  if (stamp.key === 'ARTICLE_4_REVIEW') {
+    emitSpecialMemo('ART4_REFERRAL', ctx);
+  }
   evaluateTriggers(ctx);
 
   STAMPED_REPORT_IDS.add(CURRENT_CASE.id);
 
-  // Re-render UI
   renderDossier();
-  renderMemos();
+  renderJournal();
+  await postActionHooks({ eventType: 'STAMP', eventResult: result, weightAtStart });
 
-  // Advance after the imprint settles
   setTimeout(() => {
     STAMP_IN_FLIGHT = false;
     advanceToNextCase();
@@ -1032,6 +1441,190 @@ function flashHash(headline, hash, kind) {
     bodyHtml = `<span class="text-mute">${escapeHtml(headline)}</span>`;
   }
   el.innerHTML = bodyHtml;
+}
+
+// ============================================================================
+// DEEP-FILE — annotated permanent dossier (cost: 1 scrape)
+// ============================================================================
+
+let DEEPFILE_TARGET = null;
+
+function onDeepFileClick() {
+  if (!CURRENT_CASE) return;
+  const state = window.DM.SAD.readState();
+  const gate = tierGate('DEEP_FILE', state);
+  if (!gate.ok) return;
+  DEEPFILE_TARGET = CURRENT_CASE;
+  const m = $('deepfile-modal');
+  $('deepfile-case').textContent = `${(CURRENT_CASE.keyword || '—')}  · drift ${Math.round((CURRENT_CASE.payload?.drift ?? 0) * 100)}%`;
+  $('deepfile-note').value = '';
+  $('deepfile-charcount').textContent = '0';
+  m.classList.remove('hidden');
+  m.style.display = 'flex';
+  setTimeout(() => $('deepfile-note').focus(), 50);
+  playSound('open');
+}
+
+function closeDeepFileModal() {
+  const m = $('deepfile-modal');
+  m.classList.add('hidden');
+  m.style.display = 'none';
+  DEEPFILE_TARGET = null;
+}
+
+async function submitDeepFile() {
+  if (!DEEPFILE_TARGET) return;
+  const note = $('deepfile-note').value.trim();
+  if (!note) {
+    flashHash('ANNOTATION REQUIRED', null, 'error');
+    return;
+  }
+  const submitBtn = $('deepfile-submit');
+  submitBtn.disabled = true;
+  submitBtn.textContent = '[FILING…]';
+  flashHash('GENERATING BLOCK\u2026', null, 'pending');
+
+  const payload = {
+    article:    'DEEP-FILE',
+    report_id:  DEEPFILE_TARGET.id,
+    keyword:    DEEPFILE_TARGET.keyword,
+    drift:      DEEPFILE_TARGET.payload?.drift ?? 0,
+    note,
+  };
+  const result = await window.DM.SAD.file('DEEP_FILE', payload, { cost: ACTION_GATES.DEEP_FILE.scrapeCost });
+
+  if (!result || result.ok !== true) {
+    submitBtn.disabled = false;
+    submitBtn.textContent = '[FILE — 1 SCRAPE]';
+    if (result && result.error === 'desync') {
+      closeDeepFileModal();
+      handleDesync(result);
+    } else if (result && result.error === 'insufficient') {
+      flashHash(`FILING REJECTED \u00b7 BALANCE INSUFFICIENT (${result.required ?? 1} required, ${result.remaining ?? 0} on file)`, null, 'error');
+      playSound('reject');
+    } else {
+      flashHash(`FILING REJECTED \u00b7 ${(result?.error || 'unknown').toUpperCase()}`, null, 'error');
+      playSound('reject');
+    }
+    return;
+  }
+
+  // Success.
+  showStampImprint('DEEP-FILED');
+  flashHash('LEDGER ACCEPTED', result.event.h, 'success');
+  playSound('accept');
+
+  const weightAtStart = currentWeight();
+  const { state } = applyStatChanges(ACTION_GATES.DEEP_FILE.standing, ACTION_GATES.DEEP_FILE.selfhoodCost);
+
+  const ctx = {
+    event_count: result.count,
+    standing:    state.standing,
+    selfhood:    state.selfhood,
+    last_event:  result.event,
+  };
+  emitSpecialMemo('DEEP_FILE_RECEIVED', ctx);
+  evaluateTriggers(ctx);
+
+  STAMPED_REPORT_IDS.add(DEEPFILE_TARGET.id);
+  if (window.DM.renderCredits) window.DM.renderCredits();
+
+  renderDossier();
+  renderJournal();
+  await postActionHooks({ eventType: 'DEEP_FILE', eventResult: result, weightAtStart });
+
+  setTimeout(() => {
+    submitBtn.disabled = false;
+    submitBtn.textContent = '[FILE — 1 SCRAPE]';
+    closeDeepFileModal();
+    advanceToNextCase();
+  }, 900);
+}
+
+// ============================================================================
+// DISPATCH — file a fresh inquiry from the Bureau
+// ----------------------------------------------------------------------------
+// Records a DISPATCH chain event (cost 0 in the chain), then opens the index
+// page in a new tab with the keyword pre-populated. The actual scrape tariff
+// is collected by the standard /submit path on that page, not here, so the
+// player only pays once for the underlying query.
+// ============================================================================
+
+async function onDispatchClick() {
+  const input = $('dispatch-input');
+  const status = $('dispatch-status');
+  const keyword = (input.value || '').trim();
+  if (!keyword) {
+    status.className = 'px-4 pb-3 mono text-[10px] text-red';
+    status.textContent = 'TARGET REQUIRED';
+    return;
+  }
+  if (keyword.length < 2 || keyword.length > 120) {
+    status.className = 'px-4 pb-3 mono text-[10px] text-red';
+    status.textContent = 'TARGET REJECTED — must be between 2 and 120 characters';
+    return;
+  }
+  const state = window.DM.SAD.readState();
+  const gate = tierGate('DISPATCH', state);
+  if (!gate.ok) {
+    status.className = 'px-4 pb-3 mono text-[10px] text-red';
+    status.textContent = `DISPATCH LOCKED — ${gate.reason}`;
+    return;
+  }
+
+  const btn = $('dispatch-btn');
+  btn.disabled = true;
+  btn.textContent = '[DISPATCHING…]';
+  status.className = 'px-4 pb-3 mono text-[10px] text-mute';
+  status.textContent = 'committing chain event…';
+  flashHash('GENERATING BLOCK\u2026', null, 'pending');
+
+  const result = await window.DM.SAD.file('DISPATCH', { keyword }, { cost: 0 });
+
+  if (!result || result.ok !== true) {
+    btn.disabled = false;
+    btn.textContent = '[DISPATCH]';
+    if (result && result.error === 'desync') {
+      handleDesync(result);
+      status.className = 'px-4 pb-3 mono text-[10px] text-red';
+      status.textContent = 'LEDGER DESYNC — provenance required before filing';
+    } else {
+      status.className = 'px-4 pb-3 mono text-[10px] text-red';
+      status.textContent = `DISPATCH REJECTED \u00b7 ${(result?.error || 'unknown').toUpperCase()}`;
+    }
+    playSound('reject');
+    return;
+  }
+
+  flashHash('LEDGER ACCEPTED', result.event.h, 'success');
+  playSound('accept');
+
+  const weightAtStart = currentWeight();
+  const { state: st } = applyStatChanges(ACTION_GATES.DISPATCH.standing, ACTION_GATES.DISPATCH.selfhoodCost);
+
+  const ctx = {
+    event_count: result.count,
+    standing:    st.standing,
+    selfhood:    st.selfhood,
+    last_event:  result.event,
+  };
+  emitSpecialMemo('DISPATCH_RECEIVED', ctx);
+  evaluateTriggers(ctx);
+
+  renderDossier();
+  renderJournal();
+  await postActionHooks({ eventType: 'DISPATCH', eventResult: result, weightAtStart });
+
+  // Open the report page with the keyword. The /submit flow there will burn
+  // the actual scrape via the standard redeem_code path.
+  const url = `./index.html?q=${encodeURIComponent(keyword)}`;
+  window.open(url, '_blank', 'noopener');
+
+  status.className = 'px-4 pb-3 mono text-[10px] text-rust';
+  status.textContent = `DISPATCHED \u00b7 inquiry opened in new tab \u00b7 results will materialize in the public Ledger`;
+  input.value = '';
+  btn.disabled = false;
+  btn.textContent = '[DISPATCH]';
 }
 
 // ============================================================================
@@ -1109,12 +1702,18 @@ async function onReestablish() {
 }
 
 function onAbandonLocal() {
-  if (!confirm('Abandon local archive? This wipes your local Bureau state on this device. The chain on the network is untouched. Continue?')) return;
+  if (!confirm('Abandon local archive? This wipes your local Bureau state on this device — including the codex. The chains on the network are untouched. Continue?')) return;
   window.DM.SAD.wipeLocal();
+  ACTIVE_BALANCE = null;
   rebuildStampedSet();
+  // Re-bootstrap codex from the stored Ctrl+K code (if any) and a fresh nonce.
+  window.DM.SAD.ensureCodex();
+  window.DM.SAD.ensureChainNonce();
   renderDossier();
   renderMemos();
   renderDesyncBand();
+  renderCodex();
+  renderJournal();
   applyAccessGating();
   reloadIntake();
   flashHash('LOCAL ARCHIVE ABANDONED', null, 'pending');
@@ -1180,14 +1779,16 @@ function renderMemos() {
 
 function onExport() {
   const archive = window.DM.SAD.readArchive();
-  const head = window.DM.SAD.readHead();
-  const count = window.DM.SAD.readCount();
-  const state = window.DM.SAD.readState();
-  const memos = window.DM.SAD.readMemos();
+  const head    = window.DM.SAD.readHead();
+  const count   = window.DM.SAD.readCount();
+  const state   = window.DM.SAD.readState();
+  const memos   = window.DM.SAD.readMemos();
+  const codex   = window.DM.SAD.readCodex();
+  const chain_nonce = window.DM.SAD.readChainNonce() || window.DM.SAD.LEGACY_NONCE;
   const blob = {
     _format: 'sad-archive-v1',
     _exported_at: new Date().toISOString(),
-    archive, head, count, state, memos,
+    archive, head, count, state, memos, codex, chain_nonce,
   };
   $('export-area').value = JSON.stringify(blob, null, 2);
 }
@@ -1258,16 +1859,378 @@ function finalizeImport(blob, verify, note = '') {
   window.DM.SAD.writeCount(verify.count);
   if (blob.state)  window.DM.SAD.writeState(blob.state);
   if (Array.isArray(blob.memos)) window.DM.SAD.writeMemos(blob.memos);
+  if (Array.isArray(blob.codex)) window.DM.SAD.writeCodex(blob.codex);
+  if (typeof blob.chain_nonce === 'string') window.DM.SAD.writeChainNonce(blob.chain_nonce);
 
   const status = $('import-status');
   status.className = 'mono text-[10px] text-rust';
   status.textContent = `IMPORT ACCEPTED \u00b7 ${verify.count} events restored${note}`;
 
+  ACTIVE_BALANCE = null;
   rebuildStampedSet();
   renderDossier();
   renderMemos();
   renderDesyncBand();
+  renderCodex();
+  renderJournal();
   reloadIntake();
+}
+
+// ============================================================================
+// THE CODEX — accumulated credentials, weight, trust
+// ----------------------------------------------------------------------------
+// Renders the codex panel, handles stacking new codes, detects active-code
+// exhaustion, and emits the codex-related memos. The codex itself is owned
+// by the SAD bridge layer (window.DM.SAD); this section is purely UI.
+// ============================================================================
+
+let CODEX_HIDDEN = false;
+let ACTIVE_BALANCE = null;  // last-known balance of active code, or null
+
+function maskCode(code) {
+  if (!code) return '—';
+  const tail = code.slice(-4);
+  return code.slice(0, 4) + '-••••-•••' + tail.slice(-1);
+}
+
+function renderCodex() {
+  const codex = window.DM.SAD.ensureCodex();
+  const weight = window.DM.SAD.codexWeight(codex.length);
+  const state  = window.DM.SAD.readState();
+  const archiveLength = window.DM.SAD.readCount();
+  const ageSec = Math.max(0, Math.floor(Date.now() / 1000) - (state.genesis_at || Math.floor(Date.now() / 1000)));
+  const trust  = window.DM.SAD.trust({
+    selfhood:    state.selfhood,
+    codexSize:   codex.length,
+    chainLength: archiveLength,
+    ageSeconds:  ageSec,
+  });
+
+  $('codex-count').textContent  = `${codex.length} code${codex.length === 1 ? '' : 's'}`;
+  $('codex-weight').textContent = `×${weight}`;
+  $('codex-trust').textContent  = trust.toFixed(2);
+  $('form-weight-note') && ( $('form-weight-note').textContent = `weight ×${weight} applied` );
+
+  const list = $('codex-list');
+  if (!codex.length) {
+    list.innerHTML = `<li class="px-4 py-3 mono text-[11px] text-rustDark">No credentials bound. Stack a code to begin.</li>`;
+  } else {
+    list.innerHTML = codex.map((entry, i) => {
+      const isActive = (i === codex.length - 1) && entry.status === 'active';
+      const display  = CODEX_HIDDEN ? maskCode(entry.code) : entry.code;
+      let statusBadge;
+      if (entry.status === 'depleted') {
+        statusBadge = `<span class="text-rust">DEPLETED</span>`;
+      } else if (isActive) {
+        const bal = ACTIVE_BALANCE;
+        const balText = bal === null ? 'verifying…' : (bal === 0 ? 'depleted' : `${bal} scrapes`);
+        statusBadge = `<span class="text-rust font-bold">ACTIVE</span> <span class="text-rustDark">·</span> <span class="text-ink">${escapeHtml(balText)}</span>`;
+      } else {
+        statusBadge = `<span class="text-rustDark">STACKED</span>`;
+      }
+      const pointer = isActive ? '▶' : ' ';
+      const ago = entry.added_at ? humanAgo(new Date(entry.added_at * 1000).toISOString()) : '';
+      return `
+        <li class="px-4 py-2.5 mono text-[12px] text-ink flex items-center gap-3 ${isActive ? 'bg-bone2/60' : ''}">
+          <span class="text-rust w-3">${pointer}</span>
+          <span class="font-bold flex-1 truncate">${escapeHtml(display)}</span>
+          <span class="text-[10px] text-rustDark">added ${escapeHtml(ago || '—')}</span>
+          <span class="text-[10px]">${statusBadge}</span>
+        </li>
+      `;
+    }).join('');
+  }
+}
+
+// Peek the active code balance and surface depletion. Updates the codex
+// banner. Called on load and after every successful filing.
+async function checkActiveDepletion() {
+  const codex = window.DM.SAD.readCodex();
+  if (!codex.length) return;
+  const active = codex[codex.length - 1];
+  if (!active || active.code === undefined) return;
+  if (active.status === 'depleted') {
+    ACTIVE_BALANCE = 0;
+    $('codex-depletion').classList.remove('hidden');
+    return;
+  }
+  const peek = await window.DM.peekCode(active.code);
+  if (peek && peek.ok === true) {
+    ACTIVE_BALANCE = peek.remaining;
+    if (peek.remaining === 0) {
+      window.DM.SAD.markActiveDepleted();
+      $('codex-depletion').classList.remove('hidden');
+      // Emit credential-exhausted memo (once per depletion event, tracked
+      // via the entry itself — we set depleted_at in markActiveDepleted).
+      const after = window.DM.SAD.readCodex();
+      const last = after[after.length - 1];
+      if (last && last.depleted_at && (Date.now()/1000 - last.depleted_at) < 5) {
+        emitSpecialMemo('CREDENTIAL_EXHAUSTED', {
+          event_count: window.DM.SAD.readCount(),
+          standing:    window.DM.SAD.readState().standing,
+          selfhood:    window.DM.SAD.readState().selfhood,
+          last_event:  { type: 'DEPLETION', payload: {} },
+        });
+        renderMemos();
+      }
+    } else {
+      $('codex-depletion').classList.add('hidden');
+    }
+  } else if (peek && peek.error === 'not_found') {
+    ACTIVE_BALANCE = null;
+    $('codex-depletion').classList.remove('hidden');
+  } else {
+    // Network or other error — leave UI alone, just don't claim a balance.
+    ACTIVE_BALANCE = ACTIVE_BALANCE; // no-op
+  }
+}
+
+async function onStackCode() {
+  const input = $('codex-stack-input');
+  const status = $('codex-stack-status');
+  const code = (input.value || '').trim().toUpperCase();
+  if (!code) return;
+  status.classList.remove('hidden');
+  status.className = 'px-4 pb-3 mono text-[10px] text-rustDark';
+  status.textContent = 'verifying credential…';
+  const btn = $('codex-stack-btn');
+  btn.disabled = true;
+  btn.textContent = '[STACKING…]';
+
+  flashHash('GENERATING BLOCK\u2026', null, 'pending');
+  playSound('stamp');
+
+  const weightAtStart = currentWeight();
+  const result = await window.DM.SAD.stackCode(code);
+
+  if (!result || result.ok !== true) {
+    btn.disabled = false;
+    btn.textContent = '[+ STACK]';
+    status.className = 'px-4 pb-3 mono text-[10px] text-red';
+    if (result?.error === 'duplicate_code') {
+      status.textContent = 'CREDENTIAL ALREADY BOUND — stacking rejected.';
+    } else if (result?.error === 'not_found' || result?.error === 'invalid_format') {
+      status.textContent = 'CREDENTIAL NOT FOUND ON THE LEDGER.';
+    } else if (result?.error === 'desync') {
+      handleDesync(result);
+      status.textContent = 'LEDGER DESYNC — provenance must be re-established before stacking.';
+    } else {
+      status.textContent = `STACK REJECTED · ${(result?.error || 'unknown').toUpperCase()}`;
+    }
+    flashHash(`STACK REJECTED · ${(result?.error || 'unknown').toUpperCase()}`, null, 'error');
+    playSound('reject');
+    return;
+  }
+
+  flashHash('CREDENTIAL BOUND', result.event.h, 'success');
+  playSound('accept');
+  input.value = '';
+  status.className = 'px-4 pb-3 mono text-[10px] text-rust';
+  status.textContent = `CREDENTIAL BOUND · codex now holds ${window.DM.SAD.readCodex().length} codes`;
+  btn.disabled = false;
+  btn.textContent = '[+ STACK]';
+
+  ACTIVE_BALANCE = null;
+  renderDossier();
+  renderJournal();
+  await postActionHooks({ eventType: 'STACK', eventResult: result, weightAtStart });
+  // Refresh credits indicator since active code may have changed.
+  if (window.DM.renderCredits) window.DM.renderCredits();
+  applyAccessGating();
+}
+
+function onToggleCodexHide() {
+  CODEX_HIDDEN = !CODEX_HIDDEN;
+  $('codex-hide').textContent = CODEX_HIDDEN ? '[SHOW]' : '[HIDE]';
+  renderCodex();
+}
+
+// === Codex export / import (separate from chain export) ===
+function onCodexExport() {
+  const codex = window.DM.SAD.readCodex();
+  const nonce = window.DM.SAD.readChainNonce() || window.DM.SAD.LEGACY_NONCE;
+  const blob = {
+    _format:      'sad-codex-v1',
+    _exported_at: new Date().toISOString(),
+    chain_nonce:  nonce,
+    codex,
+  };
+  $('codex-export-area').value = JSON.stringify(blob, null, 2);
+}
+
+async function onCodexImport() {
+  const ta = $('codex-export-area');
+  const status = $('codex-stack-status');
+  status.classList.remove('hidden');
+  status.className = 'px-4 pb-3 mono text-[10px] text-rustDark';
+  status.textContent = 'parsing codex…';
+  let blob;
+  try { blob = JSON.parse(ta.value); }
+  catch (_) {
+    status.className = 'px-4 pb-3 mono text-[10px] text-red';
+    status.textContent = 'CODEX REJECTED · input is not valid JSON';
+    return;
+  }
+  if (!blob || blob._format !== 'sad-codex-v1' || !Array.isArray(blob.codex)) {
+    status.className = 'px-4 pb-3 mono text-[10px] text-red';
+    status.textContent = 'CODEX REJECTED · unrecognized format';
+    return;
+  }
+  // Replace local codex + chain_nonce. The chain archive must align with
+  // this codex for filings to verify against the server.
+  window.DM.SAD.writeCodex(blob.codex);
+  if (blob.chain_nonce) window.DM.SAD.writeChainNonce(blob.chain_nonce);
+  status.className = 'px-4 pb-3 mono text-[10px] text-rust';
+  status.textContent = `CODEX IMPORTED · ${blob.codex.length} credentials bound`;
+  ACTIVE_BALANCE = null;
+  renderCodex();
+  renderDossier();
+  await checkActiveDepletion();
+}
+
+// ============================================================================
+// CASE JOURNAL — paginated archive viewer
+// ----------------------------------------------------------------------------
+// Renders the local hash-chained log. Each entry shows: sequence number,
+// type, timestamp, a payload summary, and the (truncated) head hash. Entries
+// link visually via dotted connectors so the chain is legible at a glance.
+// Click an entry to expand its full hash/prev hash for inspection.
+// ============================================================================
+
+let JOURNAL_OPEN = false;
+
+function payloadSummary(ev) {
+  const p = ev.payload || {};
+  switch (ev.type) {
+    case 'STAMP':
+      return `<span class="text-rust">stamp</span> · ${escapeHtml(p.keyword || '')} <span class="text-mute">· ${escapeHtml(p.article || '')}</span>`;
+    case 'DEEP_FILE': {
+      const note = (p.note || '').trim();
+      const snippet = note.length > 80 ? note.slice(0, 80) + '\u2026' : note;
+      return `<span class="text-rust">deep-file</span> · ${escapeHtml(p.keyword || '')}<br/><span class="text-mute">"${escapeHtml(snippet)}"</span>`;
+    }
+    case 'DISPATCH':
+      return `<span class="text-rust">dispatch</span> · ${escapeHtml(p.keyword || '')}`;
+    case 'STACK':
+      return `<span class="text-rust">stack</span> · code_hash ${escapeHtml((p.code_hash || '').slice(0, 12))}\u2026`;
+    default:
+      return `<span class="text-rust">${escapeHtml(ev.type)}</span>`;
+  }
+}
+
+function fmtTs(t) {
+  if (!t) return '—';
+  const d = new Date(t * 1000);
+  const z = (n) => String(n).padStart(2, '0');
+  return `${d.getUTCFullYear()}-${z(d.getUTCMonth()+1)}-${z(d.getUTCDate())} ${z(d.getUTCHours())}:${z(d.getUTCMinutes())}Z`;
+}
+
+function renderJournal() {
+  const archive = window.DM.SAD.readArchive();
+  $('journal-count').textContent = `${archive.length} event${archive.length === 1 ? '' : 's'}`;
+  const head = window.DM.SAD.readHead();
+  const headEl = $('journal-head');
+  if (headEl) headEl.textContent = archive.length ? `head ${head.slice(0,12)}\u2026` : '';
+
+  if (!JOURNAL_OPEN) return;
+  const list = $('journal-list');
+  if (!archive.length) {
+    list.innerHTML = '<div class="px-3 py-4 mono text-[11px] text-mute">No events on file.</div>';
+    return;
+  }
+  list.innerHTML = archive.slice().reverse().map(ev => `
+    <div class="chain-event" data-n="${ev.n}" style="background:#D6D0BD; margin-bottom:1px;">
+      <div class="chain-n">#${String(ev.n).padStart(4,'0')}</div>
+      <div>
+        <div class="flex items-center justify-between">
+          <div>${payloadSummary(ev)}</div>
+          <div class="text-mute">${escapeHtml(fmtTs(ev.t))}</div>
+        </div>
+        <div class="chain-h mt-1">h ${escapeHtml(ev.h)}</div>
+        <div class="text-mute" style="font-size:10px;">prev ${escapeHtml(ev.prev)}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleJournal() {
+  JOURNAL_OPEN = !JOURNAL_OPEN;
+  const body = $('journal-body');
+  const tog = $('journal-toggle');
+  if (JOURNAL_OPEN) {
+    body.classList.remove('hidden');
+    tog.textContent = '[COLLAPSE]';
+    renderJournal();
+  } else {
+    body.classList.add('hidden');
+    tog.textContent = '[EXPAND]';
+  }
+}
+
+// ============================================================================
+// SOUND — procedural Web Audio cues. No external assets. Lightweight.
+// ----------------------------------------------------------------------------
+//   stamp   — low percussive thunk on stamp button press
+//   accept  — short rising chime on successful filing
+//   reject  — harsh buzz on rejection / desync
+//   open    — brief click on modal open
+// ============================================================================
+
+const AUDIO_PREF_KEY = 'sad_audio_v1';
+let AUDIO_CTX = null;
+let AUDIO_ON = (() => {
+  try { return localStorage.getItem(AUDIO_PREF_KEY) !== '0'; } catch (_) { return true; }
+})();
+
+function ensureCtx() {
+  if (AUDIO_CTX) return AUDIO_CTX;
+  try { AUDIO_CTX = new (window.AudioContext || window.webkitAudioContext)(); }
+  catch (_) { return null; }
+  return AUDIO_CTX;
+}
+
+function tone({ type='sine', freq=440, dur=0.08, gain=0.06, sweep=0, delay=0 }) {
+  const ctx = ensureCtx(); if (!ctx) return;
+  const t0 = ctx.currentTime + delay;
+  const osc = ctx.createOscillator();
+  const g = ctx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, t0);
+  if (sweep) osc.frequency.exponentialRampToValueAtTime(Math.max(20, freq + sweep), t0 + dur);
+  g.gain.setValueAtTime(0, t0);
+  g.gain.linearRampToValueAtTime(gain, t0 + 0.005);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  osc.connect(g).connect(ctx.destination);
+  osc.start(t0);
+  osc.stop(t0 + dur + 0.02);
+}
+
+function playSound(kind) {
+  if (!AUDIO_ON) return;
+  switch (kind) {
+    case 'stamp':
+      tone({ type:'sine',     freq: 90,  dur: 0.08, gain: 0.18, sweep: -40 });
+      tone({ type:'square',   freq: 220, dur: 0.04, gain: 0.04, delay: 0.005 });
+      break;
+    case 'accept':
+      tone({ type:'sine',     freq: 880, dur: 0.05, gain: 0.06 });
+      tone({ type:'sine',     freq: 1320, dur: 0.10, gain: 0.05, delay: 0.05 });
+      break;
+    case 'reject':
+      tone({ type:'sawtooth', freq: 220, dur: 0.18, gain: 0.05, sweep: -80 });
+      tone({ type:'sawtooth', freq: 195, dur: 0.18, gain: 0.04, sweep: -80, delay: 0.02 });
+      break;
+    case 'open':
+      tone({ type:'square',   freq: 600, dur: 0.03, gain: 0.04 });
+      break;
+  }
+}
+
+function setAudioEnabled(on) {
+  AUDIO_ON = !!on;
+  try { localStorage.setItem(AUDIO_PREF_KEY, on ? '1' : '0'); } catch (_) {}
+  const btn = $('audio-toggle');
+  if (btn) btn.textContent = AUDIO_ON ? '[ON]' : '[OFF]';
 }
 
 // ============================================================================
@@ -1275,27 +2238,28 @@ function finalizeImport(blob, verify, note = '') {
 // ============================================================================
 
 whenReady(async () => {
-  // Bridge identity (top-bar identity badge)
   window.DM.applyIdentity?.();
 
-  // Initial paint
+  // Bootstrap codex from stored code (silent migration for pre-v0.3 players).
+  window.DM.SAD.ensureCodex();
+  window.DM.SAD.ensureChainNonce();
+
+  // Initial paint.
   renderDossier();
   renderMemos();
   renderDesyncBand();
+  renderCodex();
 
-  // Cross-check with server head on load. If a code is stored and our local
-  // head doesn't match the server, mark orphan immediately so the player
-  // doesn't waste a filing trying to discover the desync the hard way.
-  const code = window.DM.readStoredCode?.() || '';
-  if (code) {
-    const peek = await window.DM.SAD.peek(code);
+  // Cross-check with server head on load against the (anchor, chain_nonce)
+  // identity. Surface orphan state immediately so we don't burn a filing to
+  // discover desync the hard way.
+  const anchor = window.DM.SAD.getAnchor();
+  if (anchor) {
+    const peek = await window.DM.SAD.peek(anchor, window.DM.SAD.readChainNonce());
     if (peek && peek.ok === true) {
       const localHead  = window.DM.SAD.readHead();
       const localCount = window.DM.SAD.readCount();
       if (peek.exists && (peek.head !== localHead || peek.count !== localCount)) {
-        // Either the network has progress we don't (someone else used the
-        // code), or our local has progress the network doesn't (we filed
-        // offline and got out of sync). Both register as desync.
         const state = window.DM.SAD.readState();
         state.status = 'orphan';
         state.serverHead = peek.head;
@@ -1307,6 +2271,9 @@ whenReady(async () => {
     }
   }
 
+  // Check active credential balance. If exhausted, lock filing + emit memo.
+  await checkActiveDepletion();
+
   // Wire static buttons
   $('intake-refresh').addEventListener('click', reloadIntake);
   $('reestablish-btn').addEventListener('click', onReestablish);
@@ -1314,18 +2281,62 @@ whenReady(async () => {
   $('export-btn').addEventListener('click', onExport);
   $('import-btn').addEventListener('click', onImport);
 
+  // DISPATCH wiring
+  $('dispatch-btn').addEventListener('click', onDispatchClick);
+  $('dispatch-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); onDispatchClick(); }
+  });
+
+  // DEEP-FILE modal wiring
+  $('deepfile-cancel').addEventListener('click', closeDeepFileModal);
+  $('deepfile-submit').addEventListener('click', submitDeepFile);
+  $('deepfile-note').addEventListener('input', (e) => {
+    $('deepfile-charcount').textContent = String(e.target.value.length);
+  });
+  $('deepfile-modal').addEventListener('click', (e) => {
+    if (e.target.id === 'deepfile-modal') closeDeepFileModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const m = $('deepfile-modal');
+      if (m && !m.classList.contains('hidden')) closeDeepFileModal();
+    }
+  });
+
+  // CODEX wiring
+  $('codex-stack-btn').addEventListener('click', onStackCode);
+  $('codex-stack-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); onStackCode(); }
+  });
+  $('codex-hide').addEventListener('click', onToggleCodexHide);
+  $('codex-export-btn').addEventListener('click', onCodexExport);
+  $('codex-import-btn').addEventListener('click', onCodexImport);
+
+  // CASE JOURNAL wiring
+  $('journal-toggle').addEventListener('click', toggleJournal);
+  renderJournal();
+
+  // Audio toggle
+  setAudioEnabled(AUDIO_ON);
+  $('audio-toggle').addEventListener('click', () => setAudioEnabled(!AUDIO_ON));
+
   // Load cases
   await reloadIntake();
   applyAccessGating();
 });
 
 // React to code changes from the Ctrl+K panel (in case the user changes
-// their code while on the Bureau page).
+// their code while on the Bureau page). The Ctrl+K code is treated as a
+// candidate for the codex; if there's no codex yet, ensureCodex will
+// pick it up. If a codex already exists, the user must explicitly stack
+// new codes through the codex panel.
 document.addEventListener('keydown', (e) => {
-  // Light heuristic: when the Ctrl+K panel closes (esc/enter), re-render.
   if (e.key === 'Escape' || e.key === 'Enter') {
-    setTimeout(() => {
+    setTimeout(async () => {
+      window.DM.SAD.ensureCodex();
       renderDossier();
+      renderCodex();
+      await checkActiveDepletion();
       applyAccessGating();
     }, 100);
   }

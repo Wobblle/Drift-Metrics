@@ -905,19 +905,32 @@ window.DM = (() => {
   }
 
   // ==========================================================================
-  // SAD LEDGER — Bureau game layer
+  // SAD LEDGER — Bureau game layer (v0.3a — Codex + parallel chains)
   // --------------------------------------------------------------------------
   // The local archive is a hash-chained append-only log stored in
-  // localStorage. Each event includes a hash that depends on the previous
-  // hash, the event sequence number, the timestamp, the type, and a
-  // canonical JSON encoding of the payload. The server (Supabase) stores
-  // ONLY the head hash + event count for a given code (keyed on its
-  // sha256). We never push the body of the archive to the network.
+  // localStorage. The chain identity is (anchor_code, chain_nonce):
   //
-  // On every action: client computes new_head, sends {code, prev_head,
-  // new_head, count} to the sad_advance Edge Function. Server CAS-updates
-  // its row; if the stored head doesn't match prev_head, the client is
-  // desynced (orphaned) and is downgraded to read-only ghost state.
+  //   * anchor_code — the FIRST code in the player's codex. Never changes
+  //                   for a given chain. Used for routing the server stub.
+  //   * chain_nonce — random hex32 generated at chain genesis. Allows
+  //                   multiple chains to coexist on the same anchor (lore:
+  //                   rival auditors filing under the same credential).
+  //
+  // The active code is whichever code currently sits at the top of the
+  // codex (codex[length-1]). It's used to burn scrapes for action costs;
+  // it may equal the anchor in single-code codexes.
+  //
+  // Each chain event hash binds to the cdx_hash (sha256 roll over the codex)
+  // at the moment of filing. Tampering with the codex breaks verification.
+  //
+  // Each event also carries a per-event nonce (random hex16) in its payload
+  // so that two parallel chains never collide on event hashes even if they
+  // file identical action sequences.
+  //
+  // Chain events also commit selfhood/codex_size/trust at time of action
+  // for the Phantom Engine to anchor narrative against.
+  //
+  // The server stores: head, count, cdx_hash. The body lives only locally.
   // ==========================================================================
 
   const SAD_ARCHIVE_KEY  = 'sad_archive_v1';
@@ -925,8 +938,11 @@ window.DM = (() => {
   const SAD_COUNT_KEY    = 'sad_count_v1';
   const SAD_STATE_KEY    = 'sad_state_v1';
   const SAD_MEMOS_KEY    = 'sad_memos_v1';
+  const SAD_CODEX_KEY    = 'sad_codex_v1';
+  const SAD_NONCE_KEY    = 'sad_chain_nonce_v1';
   const SAD_FUNCTION_URL = `${DM_SUPABASE_URL}/functions/v1/sad_advance`;
   const SAD_ZERO64       = '0'.repeat(64);
+  const SAD_LEGACY_NONCE = '0'.repeat(32);
 
   // Hex SHA-256 via SubtleCrypto. Async because the Web Crypto API is async.
   async function sadSha256Hex(input) {
@@ -947,6 +963,123 @@ window.DM = (() => {
     return '{' + keys.map(k => JSON.stringify(k) + ':' + sadCanonicalJson(obj[k])).join(',') + '}';
   }
 
+  function sadGenChainNonce() {
+    const arr = new Uint8Array(16);
+    crypto.getRandomValues(arr);
+    return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+  function sadGenEventNonce() {
+    const arr = new Uint8Array(8);
+    crypto.getRandomValues(arr);
+    return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  // === Codex helpers ========================================================
+  // The codex is an ordered list of code entries. codex[0] is the anchor;
+  // the last entry is the active code (the one with status === 'active').
+  // Older entries have status 'stacked' or 'depleted'.
+  //
+  // Entry shape:
+  //   { code, added_at, status: 'active'|'stacked'|'depleted', depleted_at? }
+
+  function sadReadCodex() {
+    try {
+      const raw = localStorage.getItem(SAD_CODEX_KEY);
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch (_) { return []; }
+  }
+  function sadWriteCodex(codex) {
+    try { localStorage.setItem(SAD_CODEX_KEY, JSON.stringify(codex)); }
+    catch (_) {}
+  }
+
+  // Bootstrap the codex from the player's stored code if empty. This is
+  // the silent migration from pre-v0.3 clients: their existing stored
+  // code becomes codex[0].
+  function sadEnsureCodex() {
+    let codex = sadReadCodex();
+    if (codex.length === 0) {
+      const stored = readStoredCode();
+      if (stored) {
+        codex = [{
+          code:     stored,
+          added_at: Math.floor(Date.now() / 1000),
+          status:   'active',
+        }];
+        sadWriteCodex(codex);
+      }
+    }
+    return codex;
+  }
+
+  function sadGetAnchor() {
+    const codex = sadEnsureCodex();
+    return codex[0]?.code || readStoredCode() || null;
+  }
+  function sadGetActive() {
+    const codex = sadEnsureCodex();
+    return codex[codex.length - 1]?.code || readStoredCode() || null;
+  }
+
+  // sha256 roll over the codex codes in order. The empty codex hashes to
+  // ZERO64 by convention so genesis events have a stable cdx_hash.
+  async function sadComputeCdxHash(codes) {
+    if (!codes || codes.length === 0) return SAD_ZERO64;
+    const codeHashes = [];
+    for (const c of codes) codeHashes.push(await sadSha256Hex(c));
+    return await sadSha256Hex(codeHashes.join(''));
+  }
+
+  // Codex weight: ceil(sqrt(size)) capped at 10. Determines the per-action
+  // standing-reward multiplier and selfhood-cost divisor.
+  function sadCodexWeight(codexSize) {
+    const n = Math.max(1, codexSize || 0);
+    return Math.min(10, Math.max(1, Math.ceil(Math.sqrt(n))));
+  }
+
+  // Trust formula: blends erosion (selfhood inverse) with structural depth
+  // (codex size, chain length, age on ledger). Returns [0..1].
+  function sadTrust({ selfhood = 100, codexSize = 1, chainLength = 0, ageSeconds = 0 } = {}) {
+    const selfhoodInv = Math.max(0, Math.min(1, (100 - selfhood) / 100));
+    const cdxFactor   = Math.min(1, Math.log(1 + codexSize) / Math.log(101));
+    const chainFactor = Math.min(1, Math.log(1 + chainLength) / Math.log(101));
+    const ageDays     = Math.max(0, ageSeconds / 86400);
+    const ageFactor   = Math.min(1, Math.log(1 + ageDays) / Math.log(91));
+    const trust = 0.40 * selfhoodInv
+                + 0.25 * cdxFactor
+                + 0.20 * chainFactor
+                + 0.15 * ageFactor;
+    return Math.max(0, Math.min(1, trust));
+  }
+
+  // === Chain nonce (per-chain identity) =====================================
+  function sadReadChainNonce() {
+    try { return localStorage.getItem(SAD_NONCE_KEY) || ''; }
+    catch (_) { return ''; }
+  }
+  function sadWriteChainNonce(n) {
+    try { localStorage.setItem(SAD_NONCE_KEY, n); }
+    catch (_) {}
+  }
+
+  // Returns the chain nonce, generating a new one for fresh players. Pre-v0.3
+  // clients that already have a chain on the legacy single-PK row default to
+  // the LEGACY sentinel so their existing stub keeps matching.
+  function sadEnsureChainNonce() {
+    let n = sadReadChainNonce();
+    if (n) return n;
+    // Heuristic: if the player has any existing local archive, treat as
+    // legacy chain (matches the server's default sentinel for pre-v0.3 rows).
+    // If the archive is empty, generate a fresh nonce — this is a brand-new
+    // chain that should occupy its own row from the start.
+    const archive = sadReadArchive();
+    n = archive.length > 0 ? SAD_LEGACY_NONCE : sadGenChainNonce();
+    sadWriteChainNonce(n);
+    return n;
+  }
+
+  // === Archive / head / count storage =======================================
   function sadReadArchive() {
     try {
       const raw = localStorage.getItem(SAD_ARCHIVE_KEY);
@@ -956,9 +1089,8 @@ window.DM = (() => {
   }
   function sadWriteArchive(archive) {
     try { localStorage.setItem(SAD_ARCHIVE_KEY, JSON.stringify(archive)); }
-    catch (_) { /* quota / private mode — silent */ }
+    catch (_) {}
   }
-
   function sadReadHead()    { try { return localStorage.getItem(SAD_HEAD_KEY)  || SAD_ZERO64; } catch (_) { return SAD_ZERO64; } }
   function sadWriteHead(h)  { try { localStorage.setItem(SAD_HEAD_KEY, h); }  catch (_) {} }
   function sadReadCount()   { try { const n = parseInt(localStorage.getItem(SAD_COUNT_KEY) || '0', 10); return Number.isFinite(n) && n >= 0 ? n : 0; } catch (_) { return 0; } }
@@ -990,8 +1122,7 @@ window.DM = (() => {
     catch (_) {}
   }
 
-  // Wipe everything Bureau-related from localStorage. Used when the player
-  // chooses to abandon an orphan archive and start fresh.
+  // Wipe everything Bureau-related from localStorage.
   function sadWipeLocal() {
     try {
       localStorage.removeItem(SAD_ARCHIVE_KEY);
@@ -999,57 +1130,76 @@ window.DM = (() => {
       localStorage.removeItem(SAD_COUNT_KEY);
       localStorage.removeItem(SAD_STATE_KEY);
       localStorage.removeItem(SAD_MEMOS_KEY);
+      localStorage.removeItem(SAD_CODEX_KEY);
+      localStorage.removeItem(SAD_NONCE_KEY);
     } catch (_) {}
   }
 
-  // Build the next event in the chain. Returns the full event object
-  // (including its computed hash) without writing anywhere.
-  async function sadBuildEvent(type, payload, prevHead, n) {
+  // === Event construction ===================================================
+  // Build the next event in the chain. cdx_hash is committed both as a
+  // top-level field (for verification) AND included in the hash material.
+  // The per-event nonce lives in the payload — that way it's part of the
+  // canonical hash but doesn't pollute the event-level shape.
+  async function sadBuildEvent(type, payload, prevHead, n, cdxHash) {
     const t = Math.floor(Date.now() / 1000);
-    const safe = payload || {};
-    const material = `${prevHead}|${n}|${t}|${type}|${sadCanonicalJson(safe)}`;
+    const enriched = Object.assign(
+      { nonce: sadGenEventNonce() },
+      payload || {}
+    );
+    const cdx = cdxHash || SAD_ZERO64;
+    const material = `${prevHead}|${n}|${t}|${type}|${sadCanonicalJson(enriched)}|${cdx}`;
     const head = await sadSha256Hex(material);
-    return { n, t, type, payload: safe, prev: prevHead, h: head };
+    return {
+      n, t, type,
+      payload: enriched,
+      cdx,
+      prev: prevHead,
+      h:    head,
+    };
   }
 
-  // Walk an archive from genesis and verify every event's hash. Returns
-  // { ok: true, head, count } or { ok: false, error, brokenAt }.
+  // Walk an archive from genesis and verify every event's hash.
+  // Backwards compatible with legacy events (no cdx field) — those fall back
+  // to the pre-v0.3 hash material.
   async function sadVerifyArchive(archive) {
     if (!Array.isArray(archive)) return { ok: false, error: 'not_array' };
     let prev = SAD_ZERO64;
-    let n = 0;
     for (let i = 0; i < archive.length; i++) {
       const e = archive[i];
-      n = i + 1;
+      const n = i + 1;
       if (!e || typeof e !== 'object') return { ok: false, error: 'bad_event', brokenAt: n };
       if (e.n !== n) return { ok: false, error: 'bad_sequence', brokenAt: n };
       if (e.prev !== prev) return { ok: false, error: 'bad_prev', brokenAt: n };
-      const expect = await sadSha256Hex(`${prev}|${e.n}|${e.t}|${e.type}|${sadCanonicalJson(e.payload || {})}`);
+      const material = (typeof e.cdx === 'string')
+        ? `${prev}|${e.n}|${e.t}|${e.type}|${sadCanonicalJson(e.payload || {})}|${e.cdx}`
+        : `${prev}|${e.n}|${e.t}|${e.type}|${sadCanonicalJson(e.payload || {})}`;
+      const expect = await sadSha256Hex(material);
       if (expect !== e.h) return { ok: false, error: 'hash_mismatch', brokenAt: n };
       prev = e.h;
     }
-    return { ok: true, head: prev, count: n };
+    return { ok: true, head: prev, count: archive.length };
   }
 
-  // Read the server-side stub for a code. Returns { ok, exists, head, count }
-  // or null on network error.
-  async function sadPeek(code) {
+  // === Server interaction ===================================================
+  // Peek looks up (anchor, chain_nonce). The fresh-device discovery path
+  // generates a new nonce locally and never peeks; peek is for syncing a
+  // chain you already know about.
+  async function sadPeek(code, chainNonce) {
     if (!code) return null;
+    const nonce = chainNonce || sadEnsureChainNonce();
     try {
       const r = await fetch(`${DM_SUPABASE_URL}/rest/v1/rpc/sad_peek`, {
         method:  'POST',
         headers: restHeaders(),
-        body:    JSON.stringify({ p_code: code }),
+        body:    JSON.stringify({ p_code: code, p_chain_nonce: nonce }),
       });
       if (!r.ok) return null;
       return await r.json();
     } catch (_) { return null; }
   }
 
-  // POST to the sad_advance Edge Function. Returns the parsed JSON body
-  // ({ok:true, head, count, cost_charged} on success; {ok:false, error,
-  // server_head?, server_count?, remaining?, required?} otherwise).
-  async function sadAdvanceRequest({ code, prevHead, newHead, newCount, cost = 0, force = false }) {
+  // POST to the sad_advance Edge Function with the v0.3 envelope.
+  async function sadAdvanceRequest({ anchorCode, activeCode, chainNonce, prevHead, newHead, newCount, cdxHash, cost = 0, force = false }) {
     try {
       const r = await fetch(SAD_FUNCTION_URL, {
         method:  'POST',
@@ -1059,10 +1209,13 @@ window.DM = (() => {
           'apikey':        DM_SUPABASE_ANON_KEY,
         },
         body: JSON.stringify({
-          code,
-          prev_head: prevHead,
-          new_head:  newHead,
-          new_count: newCount,
+          anchor_code: anchorCode,
+          active_code: activeCode,
+          chain_nonce: chainNonce,
+          prev_head:   prevHead,
+          new_head:    newHead,
+          new_count:   newCount,
+          cdx_hash:    cdxHash,
           cost,
           force,
         }),
@@ -1075,41 +1228,68 @@ window.DM = (() => {
     } catch (_) { return { ok: false, error: 'network' }; }
   }
 
-  // High-level: append an event of the given type+payload to the local
-  // archive AND advance the server stub. On desync, marks state.status =
-  // 'orphan' and returns the desync info without committing locally.
-  // Returns:
-  //   { ok: true,  event, head, count }
-  //   { ok: false, error, server_head?, server_count?, ... }
+  // High-level: append an event to the local archive AND advance the
+  // server stub. Augments the payload with selfhood/codex_size/trust at
+  // time of filing — these are the human-in-the-loop signals the Phantom
+  // anchors against.
   async function sadFile(type, payload, opts = {}) {
-    const code = readStoredCode();
-    if (!code) return { ok: false, error: 'no_code' };
+    const codex = sadEnsureCodex();
+    if (codex.length === 0) return { ok: false, error: 'no_code' };
+
+    const anchorCode = codex[0].code;
+    const activeCode = codex[codex.length - 1].code;
+    const chainNonce = sadEnsureChainNonce();
 
     const archive = sadReadArchive();
     const prevHead = sadReadHead();
     const expectedCount = archive.length;
     if (expectedCount !== sadReadCount()) {
-      // Local count drifted from archive length — recover by trusting archive.
       sadWriteCount(expectedCount);
     }
 
-    const event = await sadBuildEvent(type, payload, prevHead, expectedCount + 1);
+    // Stamp the genesis timestamp on first file.
+    const state = sadReadState();
+    if (!state.genesis_at) {
+      state.genesis_at = Math.floor(Date.now() / 1000);
+      sadWriteState(state);
+    }
+
+    const cdxHash = await sadComputeCdxHash(codex.map(e => e.code));
+
+    const ageSec = Math.max(0, Math.floor(Date.now() / 1000) - (state.genesis_at || 0));
+    const trustScore = sadTrust({
+      selfhood:    state.selfhood,
+      codexSize:   codex.length,
+      chainLength: expectedCount + 1,
+      ageSeconds:  ageSec,
+    });
+
+    const enrichedPayload = Object.assign({}, payload || {}, {
+      selfhood:   Math.round((state.selfhood ?? 100) * 10) / 10,
+      codex_size: codex.length,
+      trust:      Math.round(trustScore * 1000) / 1000,
+    });
+
+    const event = await sadBuildEvent(
+      type, enrichedPayload, prevHead, expectedCount + 1, cdxHash,
+    );
 
     const cost  = opts.cost  || 0;
     const force = !!opts.force;
 
     const res = await sadAdvanceRequest({
-      code,
+      anchorCode,
+      activeCode,
+      chainNonce,
       prevHead: force ? SAD_ZERO64 : prevHead,
       newHead:  event.h,
       newCount: event.n,
+      cdxHash,
       cost,
       force,
     });
 
     if (!res || res.ok !== true) {
-      // Desync handling. Set orphan state but leave the archive intact
-      // for read-only viewing.
       if (res && res.error === 'desync') {
         const st = sadReadState();
         st.status = 'orphan';
@@ -1118,7 +1298,6 @@ window.DM = (() => {
       return res || { ok: false, error: 'unknown' };
     }
 
-    // Commit locally.
     archive.push(event);
     sadWriteArchive(archive);
     sadWriteHead(event.h);
@@ -1126,27 +1305,89 @@ window.DM = (() => {
     return { ok: true, event, head: res.head, count: res.count };
   }
 
-  // High-level: re-establish provenance after orphan. Pushes the local
-  // chain head as the new server head, paying the flat 3-scrape tax.
-  async function sadReestablishProvenance() {
-    const code = readStoredCode();
-    if (!code) return { ok: false, error: 'no_code' };
-    const archive = sadReadArchive();
+  // High-level: stack a new code on top of the codex. Verifies the code
+  // exists via peek_code first, then updates the codex locally and emits
+  // a STACK chain event. The new code becomes the active code; any
+  // previously active code is downgraded to 'stacked'.
+  //
+  // Returns the sadFile result with `ok: false, error: 'duplicate_code'`
+  // for already-stacked codes.
+  async function sadStackCode(newCode) {
+    const cleaned = (newCode || '').trim().toUpperCase();
+    if (!cleaned) return { ok: false, error: 'empty_code' };
 
-    // If local archive is empty, we can't force-push anything meaningful.
-    // The player should choose a different recovery path (start fresh).
+    const codex = sadEnsureCodex();
+    if (codex.some(e => e.code === cleaned)) {
+      return { ok: false, error: 'duplicate_code' };
+    }
+
+    // Verify the code is real and not depleted before committing.
+    const peek = await peekCode(cleaned);
+    if (!peek || peek.ok !== true) {
+      return { ok: false, error: peek?.error || 'invalid_code' };
+    }
+
+    // Provisionally update local codex. Demote prior active to 'stacked'.
+    const now = Math.floor(Date.now() / 1000);
+    const next = codex.map(e =>
+      e.status === 'active' ? Object.assign({}, e, { status: 'stacked' }) : e
+    );
+    next.push({ code: cleaned, added_at: now, status: 'active' });
+    sadWriteCodex(next);
+
+    // Commit the stack as a chain event. Payload commits the hash of the
+    // new code (not the code itself) so the chain leaks no plaintext.
+    const result = await sadFile('STACK', {
+      code_hash: await sadSha256Hex(cleaned),
+      stack_index: next.length,
+    }, { cost: 0 });
+
+    if (!result.ok) {
+      // Rollback codex on failure.
+      sadWriteCodex(codex);
+      return result;
+    }
+    return result;
+  }
+
+  // Mark the active code as depleted in the codex. UI calls this when
+  // it observes balance hit 0 on the active code. No chain event — this
+  // is local state only.
+  function sadMarkActiveDepleted() {
+    const codex = sadReadCodex();
+    if (codex.length === 0) return;
+    const last = codex[codex.length - 1];
+    if (last && last.status === 'active') {
+      last.status = 'depleted';
+      last.depleted_at = Math.floor(Date.now() / 1000);
+      sadWriteCodex(codex);
+    }
+  }
+
+  // Re-establish provenance. Force-pushes the local head + cdx to the server.
+  async function sadReestablishProvenance() {
+    const codex = sadEnsureCodex();
+    if (codex.length === 0) return { ok: false, error: 'no_code' };
+    const archive = sadReadArchive();
     if (archive.length === 0) {
       return { ok: false, error: 'empty_archive' };
     }
 
-    const head  = archive[archive.length - 1].h;
-    const count = archive.length;
+    const anchorCode = codex[0].code;
+    const activeCode = codex[codex.length - 1].code;
+    const chainNonce = sadEnsureChainNonce();
+    const head    = archive[archive.length - 1].h;
+    const count   = archive.length;
+    const cdxHash = await sadComputeCdxHash(codex.map(e => e.code));
 
     const res = await sadAdvanceRequest({
-      code,
-      prevHead: SAD_ZERO64,  // ignored when force=true but kept for shape
+      anchorCode,
+      activeCode,
+      chainNonce,
+      prevHead: SAD_ZERO64,
       newHead:  head,
       newCount: count,
+      cdxHash,
       force:    true,
     });
 
@@ -1172,6 +1413,7 @@ window.DM = (() => {
     // SAD ledger (BUREAU page)
     SAD: {
       ZERO64:           SAD_ZERO64,
+      LEGACY_NONCE:     SAD_LEGACY_NONCE,
       sha256Hex:        sadSha256Hex,
       canonicalJson:    sadCanonicalJson,
       readArchive:      sadReadArchive,
@@ -1184,11 +1426,25 @@ window.DM = (() => {
       writeState:       sadWriteState,
       readMemos:        sadReadMemos,
       writeMemos:       sadWriteMemos,
+      readCodex:        sadReadCodex,
+      writeCodex:       sadWriteCodex,
+      ensureCodex:      sadEnsureCodex,
+      getAnchor:        sadGetAnchor,
+      getActive:        sadGetActive,
+      readChainNonce:   sadReadChainNonce,
+      writeChainNonce:  sadWriteChainNonce,
+      ensureChainNonce: sadEnsureChainNonce,
+      genChainNonce:    sadGenChainNonce,
+      computeCdxHash:   sadComputeCdxHash,
+      codexWeight:      sadCodexWeight,
+      trust:            sadTrust,
       wipeLocal:        sadWipeLocal,
       buildEvent:       sadBuildEvent,
       verifyArchive:    sadVerifyArchive,
       peek:             sadPeek,
       file:             sadFile,
+      stackCode:        sadStackCode,
+      markActiveDepleted: sadMarkActiveDepleted,
       reestablishProvenance: sadReestablishProvenance,
     },
     // Init for pages that load bridge.js but don't have a search input
