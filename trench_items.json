@@ -1,0 +1,236 @@
+{
+  "version": "0.1.0",
+  "spec_notes": "Telemetry Trench item catalog. Loaded by combat_engine.js at runtime. Item IDs are stable identifiers — never rename, only deprecate. Effect.type values are interpreted by combat_engine.js handlers; adding a new type requires an engine update.",
+  "items": [
+    {
+      "id": "matrix_bolt",
+      "name": "Matrix Bolt",
+      "category": "damage",
+      "cost": 40,
+      "min_charge": 0,
+      "max_charge": 3,
+      "effect": {
+        "type": "damage_on_placed_tick",
+        "damage_min": 4,
+        "damage_max": 10
+      },
+      "blurb": "Standard-issue lane crackle. Fires once on the tick it's placed. Smooth scaling.",
+      "form_number": "MX-04"
+    },
+    {
+      "id": "drift_lance",
+      "name": "Drift Lance",
+      "category": "damage",
+      "cost": 80,
+      "min_charge": 1,
+      "max_charge": 2,
+      "effect": {
+        "type": "damage_every_other_tick",
+        "damage_min": 2,
+        "damage_max": 6
+      },
+      "blurb": "Fires every other tick from placement. Won't spin up without breathing room.",
+      "form_number": "DL-11"
+    },
+    {
+      "id": "capacitor_mine",
+      "name": "Capacitor Mine",
+      "category": "damage",
+      "cost": 60,
+      "min_charge": 4,
+      "max_charge": "uncapped",
+      "soft_max": 4,
+      "effect": {
+        "type": "damage_on_tick_8",
+        "damage_min": 0,
+        "damage_max": 30
+      },
+      "blurb": "Detonates on tick 8. Needs four empty ticks behind to arm. Past that, charge stacks indefinitely. Glass cannon.",
+      "form_number": "CM-93"
+    },
+    {
+      "id": "void_battery",
+      "name": "Void Battery",
+      "category": "damage",
+      "cost": 120,
+      "min_charge": 0,
+      "max_charge": 2,
+      "effect": {
+        "type": "damage_twice_placement_and_eight",
+        "damage_min": 3,
+        "damage_max": 9
+      },
+      "blurb": "Fires on placement tick and again on tick 8. Two bites, modest ceiling.",
+      "form_number": "VB-22"
+    },
+    {
+      "id": "shroud_plate",
+      "name": "Shroud Plate",
+      "category": "defense",
+      "cost": 30,
+      "min_charge": 0,
+      "max_charge": 2,
+      "effect": {
+        "type": "passive_lane_integrity",
+        "bonus_min": 5,
+        "bonus_max": 15
+      },
+      "blurb": "Pre-combat: adds integrity to this lane. Charges expand the upper bound of the bonus roll.",
+      "form_number": "SP-07"
+    },
+    {
+      "id": "reflector_coil",
+      "name": "Reflector Coil",
+      "category": "defense",
+      "cost": 80,
+      "min_charge": 1,
+      "max_charge": 3,
+      "effect": {
+        "type": "reflect_lane_damage",
+        "reflect_pct_min": 15,
+        "reflect_pct_max": 40
+      },
+      "blurb": "Reflects incoming lane damage as a percentage. Needs spin-up. Full charge mirrors hardest.",
+      "form_number": "RC-19"
+    },
+    {
+      "id": "static_cage",
+      "name": "Static Cage",
+      "category": "defense",
+      "cost": 50,
+      "min_charge": 2,
+      "max_charge": 2,
+      "effect": {
+        "type": "block_enemy_first_item_on_lane"
+      },
+      "blurb": "Suppresses the enemy lane's first firing item. Binary — needs the warmup, no overcharge bonus.",
+      "form_number": "SC-31"
+    },
+    {
+      "id": "aegis_loop",
+      "name": "Aegis Loop",
+      "category": "defense",
+      "cost": 100,
+      "min_charge": 3,
+      "max_charge": 3,
+      "effect": {
+        "type": "prevent_lane_collapse",
+        "uses_per_round": 1
+      },
+      "blurb": "Prevents this lane from collapsing once per round. Expensive, charge-hungry, ironclad.",
+      "form_number": "AL-02"
+    },
+    {
+      "id": "drift_tap",
+      "name": "Drift Tap",
+      "category": "utility",
+      "cost": 60,
+      "min_charge": 0,
+      "max_charge": 4,
+      "effect": {
+        "type": "lane_damage_multiplier",
+        "per_charge_bonus": 0.10
+      },
+      "blurb": "Adds +10% damage per charge to every other item on this lane. Synergy piece, no direct damage.",
+      "form_number": "DT-44"
+    },
+    {
+      "id": "phase_step",
+      "name": "Phase Step",
+      "category": "utility",
+      "cost": 40,
+      "min_charge": 0,
+      "max_charge": 0,
+      "effect": {
+        "type": "hide_lane_from_ghost"
+      },
+      "blurb": "Items on this lane don't appear in your ghost layout when you die. Burn a slot to hide your tech.",
+      "form_number": "PS-66"
+    },
+    {
+      "id": "cascade",
+      "name": "Cascade",
+      "category": "utility",
+      "cost": 90,
+      "min_charge": 2,
+      "max_charge": 3,
+      "effect": {
+        "type": "copy_damage_to_adjacent_lanes",
+        "copy_pct_at_min": 50,
+        "copy_pct_at_max": 100
+      },
+      "blurb": "Copies this lane's damage to adjacent lanes. Half at min charge, full at max.",
+      "form_number": "CD-58"
+    },
+    {
+      "id": "keyword_forge",
+      "name": "Keyword Forge",
+      "category": "utility",
+      "cost": 50,
+      "min_charge": 0,
+      "max_charge": 0,
+      "effect": {
+        "type": "drift_burst_on_tick_4",
+        "drift_multiplier": 10
+      },
+      "blurb": "On tick 4, adds (drift_score × 10) damage to this lane. Converts spicy queries into direct hurt.",
+      "form_number": "KF-17"
+    },
+    {
+      "id": "drain_pole",
+      "name": "Drain Pole",
+      "category": "shifter",
+      "cost": 70,
+      "min_charge": 0,
+      "max_charge": 3,
+      "effect": {
+        "type": "consume_forward_double_charges"
+      },
+      "blurb": "Consumes the item one tick ahead (it doesn't fire) and doubles your own effective charges. Cannibal.",
+      "form_number": "DP-08"
+    },
+    {
+      "id": "echo_capacitor",
+      "name": "Echo Capacitor",
+      "category": "shifter",
+      "cost": 80,
+      "min_charge": 1,
+      "max_charge": "uncapped",
+      "soft_max": 3,
+      "effect": {
+        "type": "double_empty_ticks_behind_for_lane",
+        "multiplier_base": 2.0,
+        "multiplier_per_overflow": 0.5
+      },
+      "blurb": "Empty ticks behind on this lane count 2× toward charge for other items. Each charge past 3 adds +0.5× more.",
+      "form_number": "EC-91"
+    },
+    {
+      "id": "inversion_plate",
+      "name": "Inversion Plate",
+      "category": "shifter",
+      "cost": 100,
+      "min_charge": 0,
+      "max_charge": 3,
+      "effect": {
+        "type": "count_empty_ticks_ahead_for_lane"
+      },
+      "blurb": "Empty ticks ahead on this lane also count toward charge for other items. Front-load builds.",
+      "form_number": "IP-36"
+    },
+    {
+      "id": "sink",
+      "name": "Sink",
+      "category": "shifter",
+      "cost": 30,
+      "min_charge": 0,
+      "max_charge": 0,
+      "effect": {
+        "type": "reduce_enemy_charge_same_column",
+        "charge_penalty": 1
+      },
+      "blurb": "Doesn't fire. Enemy items in the same tick column lose 1 charge. Anti-overclock tech.",
+      "form_number": "SK-00"
+    }
+  ]
+}

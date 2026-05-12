@@ -1,0 +1,3541 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TELEMETRY TRENCH // PRACTICE BUREAU</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=IBM+Plex+Mono:wght@400;500;700&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+   * TELEMETRY TRENCH // PRACTICE BUREAU
+   * Visual language: faded beige paper, off-register typewriter,
+   * smudged stamps, CRT scanlines, bureaucratic form-number tags.
+   * ============================================================ */
+
+  :root {
+    --paper:        #e8e3d3;
+    --paper-dark:   #d6cfba;
+    --paper-stain:  #c9bfa4;
+    --ink:          #1a1612;
+    --ink-faded:    #4a4338;
+    --ink-light:    #6b6253;
+    --stamp-red:    #8b2a2a;
+    --stamp-blue:   #2a4a78;
+    --stamp-fade:   rgba(139, 42, 42, 0.55);
+    --accent:       #b8923a;
+    --accent-dim:   #8a6f2c;
+    --lane-bg:      #ddd5be;
+    --lane-line:    #b5a988;
+    --grid-cell:    #efeadb;
+    --grid-empty:   #d6cfba;
+    --warn:         #a14a1b;
+    --good:         #4a6b2f;
+    --crt:          rgba(180, 140, 60, 0.04);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    overflow-x: hidden;
+  }
+
+  /* ---- Paper texture: layered gradients + repeating subtle grain ---- */
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    background:
+      radial-gradient(ellipse at 12% 8%,  rgba(120,90,40,0.07) 0%, transparent 35%),
+      radial-gradient(ellipse at 88% 92%, rgba(80,60,30,0.06) 0%, transparent 40%),
+      radial-gradient(ellipse at 60% 30%, rgba(150,110,60,0.04) 0%, transparent 50%);
+  }
+  /* ---- CRT scanlines overlay ---- */
+  body::after {
+    content: "";
+    position: fixed; inset: 0;
+    pointer-events: none;
+    z-index: 2;
+    background: repeating-linear-gradient(
+      0deg,
+      var(--crt) 0px,
+      var(--crt) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+    opacity: 0.6;
+  }
+
+  /* ============================================================
+   * HEADER
+   * ============================================================ */
+  header {
+    position: relative;
+    z-index: 3;
+    padding: 14px 24px 8px;
+    border-bottom: 2px solid var(--ink);
+    background: linear-gradient(180deg, var(--paper) 60%, var(--paper-dark) 100%);
+  }
+  .header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 24px;
+  }
+  .title {
+    font-family: 'VT323', monospace;
+    font-size: 38px;
+    letter-spacing: 2px;
+    line-height: 1;
+    color: var(--ink);
+    text-shadow: 1px 0 0 rgba(139,42,42,0.18), -1px 0 0 rgba(42,74,120,0.18);
+  }
+  .subtitle {
+    font-family: 'Special Elite', serif;
+    font-size: 11px;
+    color: var(--ink-faded);
+    margin-top: 4px;
+    letter-spacing: 1px;
+  }
+  .form-id {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-light);
+    text-align: right;
+    letter-spacing: 1px;
+  }
+  .form-id strong {
+    display: block;
+    font-size: 12px;
+    color: var(--ink);
+    margin-top: 2px;
+  }
+
+  /* Stamp decoration on the header */
+  .stamp {
+    display: inline-block;
+    font-family: 'Special Elite', serif;
+    font-size: 11px;
+    padding: 4px 10px;
+    border: 1.5px solid currentColor;
+    transform: rotate(-3deg);
+    letter-spacing: 2px;
+    opacity: 0.78;
+  }
+  .stamp.red { color: var(--stamp-red); border-color: var(--stamp-red); }
+  .stamp.blue { color: var(--stamp-blue); border-color: var(--stamp-blue); }
+
+  /* ============================================================
+   * LAYOUT — main grid
+   * ============================================================ */
+  main {
+    position: relative;
+    z-index: 3;
+    padding: 16px 24px 40px;
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  @media (max-width: 980px) {
+    main { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--paper);
+    border: 1.5px solid var(--ink);
+    padding: 14px 16px;
+    position: relative;
+  }
+  .panel-title {
+    font-family: 'VT323', monospace;
+    font-size: 18px;
+    letter-spacing: 2px;
+    color: var(--ink);
+    border-bottom: 1px dashed var(--ink-faded);
+    padding-bottom: 6px;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .panel-title .form-no {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-light);
+    letter-spacing: 1px;
+  }
+
+  /* ============================================================
+   * BOARD GRID — 4 lanes x 8 ticks
+   * ============================================================ */
+  .board-wrap { margin-bottom: 16px; }
+  .board-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'Special Elite', serif;
+    font-size: 11px;
+    color: var(--ink-faded);
+    margin-bottom: 6px;
+    letter-spacing: 1px;
+  }
+  .integrity-bars {
+    display: grid;
+    grid-template-columns: 60px repeat(4, 1fr);
+    gap: 2px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    margin-bottom: 6px;
+  }
+  .integrity-label {
+    color: var(--ink-faded);
+    align-self: center;
+    letter-spacing: 1px;
+  }
+  .integrity-bar {
+    background: var(--lane-bg);
+    border: 1px solid var(--ink-faded);
+    height: 14px;
+    position: relative;
+    overflow: hidden;
+  }
+  .integrity-bar-fill {
+    position: absolute; top: 0; left: 0; height: 100%;
+    background: var(--ink);
+    transition: width 0.4s steps(20);
+  }
+  .integrity-bar-fill.lane-collapsed {
+    background: var(--stamp-red);
+  }
+  .integrity-bar span {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--paper);
+    mix-blend-mode: difference;
+    z-index: 2;
+    font-weight: 700;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 60px repeat(8, 1fr);
+    grid-template-rows: 18px repeat(4, 56px);
+    gap: 2px;
+    background: var(--ink);
+    padding: 2px;
+    border: 1px solid var(--ink);
+  }
+  .grid .tick-label,
+  .grid .lane-label {
+    background: var(--paper-dark);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-faded);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: 1px;
+  }
+  .grid .corner { background: var(--paper-dark); }
+
+  .grid .cell {
+    background: var(--grid-cell);
+    border: 1px dashed transparent;
+    cursor: pointer;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    color: var(--ink-faded);
+    transition: background 0.15s;
+    user-select: none;
+  }
+  .grid .cell:hover { background: var(--paper-dark); border-color: var(--ink-faded); }
+  .grid .cell.has-item {
+    background: var(--ink);
+    color: var(--paper);
+    font-weight: 700;
+  }
+  .grid .cell.has-item .cell-name {
+    font-family: 'VT323', monospace;
+    font-size: 14px;
+    letter-spacing: 1px;
+    line-height: 1;
+    text-align: center;
+    padding: 2px;
+  }
+  .grid .cell.has-item .cell-form {
+    position: absolute; top: 2px; right: 3px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 7px;
+    opacity: 0.7;
+  }
+  .grid .cell.fire-flash {
+    animation: fire-pulse 0.5s ease-out;
+  }
+  @keyframes fire-pulse {
+    0%   { background: var(--stamp-red); box-shadow: inset 0 0 0 2px var(--stamp-red); }
+    100% { background: var(--ink); box-shadow: inset 0 0 0 0 var(--stamp-red); }
+  }
+  .grid .cell.read-only { cursor: default; }
+  .grid .cell.read-only:hover { background: var(--grid-cell); border-color: transparent; }
+  .grid .cell.read-only.has-item:hover { background: var(--ink); }
+
+  /* Ghost board styling: slightly different tint */
+  .ghost-board .grid .cell:not(.has-item) { background: #e6dfc5; }
+  .ghost-board .grid .cell.has-item { background: var(--stamp-blue); color: var(--paper); }
+
+  /* ============================================================
+   * SHOP
+   * ============================================================ */
+  .shop-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 6px;
+    max-height: 380px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  .shop-item {
+    background: var(--paper-dark);
+    border: 1px solid var(--ink-faded);
+    padding: 6px 8px;
+    cursor: pointer;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    transition: all 0.12s;
+    position: relative;
+  }
+  .shop-item:hover {
+    background: var(--paper);
+    border-color: var(--ink);
+    transform: translateX(2px);
+  }
+  .shop-item.selected {
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
+  }
+  .shop-item .si-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .shop-item .si-name {
+    font-family: 'VT323', monospace;
+    font-size: 16px;
+    letter-spacing: 1px;
+    line-height: 1;
+  }
+  .shop-item .si-cost {
+    font-weight: 700;
+    font-size: 11px;
+  }
+  .shop-item .si-stats {
+    font-size: 9px;
+    color: var(--ink-light);
+    margin-top: 3px;
+    letter-spacing: 0.5px;
+  }
+  .shop-item.selected .si-stats { color: var(--paper-dark); }
+  .shop-item .si-cat {
+    position: absolute;
+    top: 4px; right: 6px;
+    font-family: 'Special Elite', serif;
+    font-size: 8px;
+    color: var(--ink-light);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .shop-item.selected .si-cat { color: var(--paper-dark); }
+  .shop-item.unaffordable { opacity: 0.4; cursor: not-allowed; }
+  .shop-item.unaffordable:hover { transform: none; background: var(--paper-dark); }
+
+  /* ============================================================
+   * CONTROLS
+   * ============================================================ */
+  .ctrl-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+  label {
+    font-family: 'Special Elite', serif;
+    font-size: 10px;
+    color: var(--ink-faded);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  button {
+    background: var(--paper);
+    border: 1.5px solid var(--ink);
+    color: var(--ink);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    padding: 6px 12px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.12s;
+    position: relative;
+  }
+  button:hover:not(:disabled) {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  button:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+  button.primary {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  button.primary:hover:not(:disabled) {
+    background: var(--stamp-red);
+    border-color: var(--stamp-red);
+  }
+  button.danger {
+    border-color: var(--stamp-red);
+    color: var(--stamp-red);
+  }
+  button.danger:hover:not(:disabled) {
+    background: var(--stamp-red);
+    color: var(--paper);
+  }
+
+  input[type="range"] {
+    flex: 1;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--ink-faded);
+    outline: none;
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px; height: 14px;
+    background: var(--stamp-red);
+    cursor: pointer;
+    border: 1px solid var(--ink);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 14px; height: 14px;
+    background: var(--stamp-red);
+    cursor: pointer;
+    border: 1px solid var(--ink);
+  }
+
+  select, input[type="text"] {
+    background: var(--paper);
+    border: 1px solid var(--ink);
+    color: var(--ink);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    padding: 4px 6px;
+  }
+
+  /* ============================================================
+   * STATUS / READOUT
+   * ============================================================ */
+  .currency {
+    font-family: 'VT323', monospace;
+    font-size: 28px;
+    color: var(--ink);
+    letter-spacing: 2px;
+  }
+  .currency::before {
+    content: "G "; color: var(--stamp-red); margin-right: 4px;
+  }
+  .meta-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-family: 'Special Elite', serif;
+    font-size: 11px;
+    color: var(--ink-faded);
+    letter-spacing: 1px;
+  }
+  .meta-row strong { color: var(--ink); font-family: 'IBM Plex Mono', monospace; }
+
+  .selected-info {
+    background: var(--paper-stain);
+    border: 1px solid var(--ink-faded);
+    padding: 8px 10px;
+    margin-bottom: 10px;
+    font-size: 10px;
+    line-height: 1.4;
+    min-height: 60px;
+  }
+  .selected-info .si-title {
+    font-family: 'VT323', monospace;
+    font-size: 18px;
+    color: var(--ink);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  .selected-info .si-blurb {
+    color: var(--ink-faded);
+    font-style: italic;
+  }
+
+  /* ============================================================
+   * LOG OUTPUT
+   * ============================================================ */
+  .log {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 12px;
+    font-family: 'VT323', monospace;
+    font-size: 16px;
+    line-height: 1.3;
+    max-height: 280px;
+    overflow-y: auto;
+    border: 2px solid var(--ink);
+    letter-spacing: 1px;
+  }
+  .log-line {
+    opacity: 0;
+    animation: log-in 0.18s ease-out forwards;
+  }
+  .log-line.player { color: #d4d0bf; }
+  .log-line.ghost  { color: #c2a8a8; }
+  .log-line.system { color: var(--accent); }
+  .log-line.fatal  { color: var(--stamp-red); font-weight: 700; }
+  @keyframes log-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ============================================================
+   * RESULT BANNER
+   * ============================================================ */
+  .result-banner {
+    margin: 16px 0;
+    padding: 18px 24px;
+    border: 2px solid var(--ink);
+    background: var(--paper);
+    text-align: center;
+    font-family: 'VT323', monospace;
+    font-size: 36px;
+    letter-spacing: 4px;
+    position: relative;
+  }
+  .result-banner.win {
+    color: var(--good);
+    border-color: var(--good);
+  }
+  .result-banner.loss {
+    color: var(--stamp-red);
+    border-color: var(--stamp-red);
+  }
+  .result-banner.draw { color: var(--ink-faded); }
+  .result-banner .sub {
+    font-family: 'Special Elite', serif;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--ink-faded);
+    display: block;
+    margin-top: 4px;
+  }
+
+  /* ============================================================
+   * MODE TOGGLE — pill buttons
+   * ============================================================ */
+  .mode-toggle {
+    display: flex;
+    gap: 0;
+    border: 1.5px solid var(--ink);
+    margin-bottom: 6px;
+  }
+  .mode-btn {
+    flex: 1;
+    background: var(--paper);
+    border: none;
+    border-right: 1px solid var(--ink);
+    color: var(--ink);
+    padding: 6px 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.12s;
+  }
+  .mode-btn:last-child { border-right: none; }
+  .mode-btn.active {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .mode-btn:not(.active):hover {
+    background: var(--paper-dark);
+  }
+  .mode-detail {
+    font-family: 'Special Elite', serif;
+    font-size: 10px;
+    color: var(--ink-light);
+    letter-spacing: 1px;
+    margin-bottom: 14px;
+    min-height: 14px;
+  }
+
+  /* ============================================================
+   * UPGRADE BOX
+   * ============================================================ */
+  .upgrade-box {
+    background: var(--paper-stain);
+    border: 1px solid var(--ink-faded);
+    border-left: 3px solid var(--accent-dim);
+    padding: 8px 10px;
+    margin-bottom: 4px;
+  }
+  .upgrade-box button {
+    font-size: 10px;
+    padding: 5px 8px;
+    border: 1px solid var(--ink);
+    background: var(--paper);
+    letter-spacing: 1px;
+  }
+  .upgrade-box button:hover:not(:disabled) {
+    background: var(--accent-dim);
+    color: var(--paper);
+    border-color: var(--accent-dim);
+  }
+  .upgrade-box button:disabled {
+    opacity: 0.4;
+  }
+  .upgrade-box.maxed {
+    border-left-color: var(--ink-faded);
+    opacity: 0.7;
+  }
+
+  /* ============================================================
+   * TICK VISUALIZATION
+   * ============================================================ */
+  .tick-viz {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 4px;
+    max-height: 360px;
+    overflow-y: auto;
+  }
+  .tick-row {
+    display: grid;
+    grid-template-columns: 48px 1fr 1fr;
+    gap: 4px;
+    background: var(--paper-stain);
+    border: 1px solid var(--ink-faded);
+    padding: 6px 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    align-items: stretch;
+    opacity: 0;
+    animation: tick-row-in 0.25s ease-out forwards;
+  }
+  @keyframes tick-row-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .tick-row .tick-num {
+    font-family: 'VT323', monospace;
+    font-size: 20px;
+    color: var(--ink);
+    border-right: 1px dashed var(--ink-faded);
+    padding-right: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: 1px;
+  }
+  .tick-side {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-height: 24px;
+  }
+  .tick-side-label {
+    font-family: 'Special Elite', serif;
+    font-size: 8px;
+    color: var(--ink-light);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .tick-side.player .tick-side-label { color: var(--stamp-blue); }
+  .tick-side.ghost  .tick-side-label { color: var(--stamp-red); }
+  .tick-event {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 9px;
+    line-height: 1.2;
+  }
+  .tick-event .ev-item {
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .tick-event .ev-meta {
+    color: var(--ink-faded);
+    font-size: 8px;
+  }
+  .tick-event .ev-bar {
+    flex: 1;
+    height: 8px;
+    background: var(--paper);
+    border: 1px solid var(--ink-faded);
+    position: relative;
+    min-width: 30px;
+    max-width: 120px;
+  }
+  .tick-event .ev-bar-fill {
+    height: 100%;
+    background: var(--ink);
+  }
+  .tick-side.player .tick-event .ev-bar-fill { background: var(--stamp-blue); }
+  .tick-side.ghost  .tick-event .ev-bar-fill { background: var(--stamp-red); }
+  .tick-event .ev-dmg {
+    font-weight: 700;
+    color: var(--ink);
+    min-width: 28px;
+    text-align: right;
+  }
+  .tick-event.misfire {
+    opacity: 0.45;
+    font-style: italic;
+  }
+  .tick-event.blocked .ev-bar-fill {
+    background: repeating-linear-gradient(
+      45deg, var(--ink-faded) 0 4px, var(--paper-dark) 4px 8px
+    );
+  }
+  .tick-event.quiet {
+    color: var(--ink-light);
+    font-style: italic;
+    font-size: 9px;
+  }
+
+  /* ============================================================
+   * MISC
+   * ============================================================ */
+  .stamp-overlay {
+    position: absolute;
+    font-family: 'Special Elite', serif;
+    font-size: 14px;
+    color: var(--stamp-red);
+    border: 2px solid var(--stamp-red);
+    padding: 4px 12px;
+    transform: rotate(-8deg);
+    letter-spacing: 3px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .stamp-overlay.visible { opacity: 0.82; }
+
+  .footer-note {
+    margin-top: 24px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--ink-faded);
+    font-family: 'Special Elite', serif;
+    font-size: 10px;
+    color: var(--ink-light);
+    letter-spacing: 1px;
+    text-align: center;
+  }
+
+  /* ============================================================
+   * CLASSIFIED GHOST PANEL — pre-reveal state
+   * ============================================================ */
+  .ghost-board.classified {
+    position: relative;
+  }
+  .ghost-board.classified .integrity-bars,
+  .ghost-board.classified .grid,
+  .ghost-board.classified .board-meta strong,
+  .ghost-board.classified #ghost-source-label {
+    visibility: hidden;
+  }
+  .ghost-board.classified::before {
+    content: "";
+    position: absolute;
+    inset: 50px 14px 14px;
+    background:
+      repeating-linear-gradient(
+        45deg,
+        var(--ink) 0px,
+        var(--ink) 14px,
+        var(--paper-dark) 14px,
+        var(--paper-dark) 28px
+      );
+    opacity: 0.35;
+    z-index: 1;
+    pointer-events: none;
+  }
+  .ghost-board.classified::after {
+    content: "[ REDACTED ]\A OPPOSITION ASSET\A CLASSIFICATION: SEALED\A AWAITING SUBMISSION";
+    white-space: pre;
+    position: absolute;
+    inset: 50px 14px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    text-align: center;
+    font-family: 'Special Elite', serif;
+    font-size: 18px;
+    letter-spacing: 4px;
+    color: var(--stamp-red);
+    background: var(--paper);
+    border: 3px double var(--stamp-red);
+    z-index: 2;
+    transform: rotate(-1.5deg);
+    box-shadow:
+      4px 4px 0 rgba(139, 42, 42, 0.25),
+      inset 0 0 0 1px rgba(139, 42, 42, 0.3);
+  }
+  /* Reveal animation: stamp slams down + tears away */
+  .ghost-board.revealing::after {
+    animation: declassify 0.85s cubic-bezier(.7,.1,.3,1) forwards;
+  }
+  .ghost-board.revealing::before {
+    animation: declassify-hatch 0.85s cubic-bezier(.7,.1,.3,1) forwards;
+  }
+  @keyframes declassify {
+    0%   { transform: rotate(-1.5deg) scale(1); opacity: 1; }
+    25%  { transform: rotate(-1.5deg) scale(1.08); opacity: 1; }
+    40%  { transform: rotate(-4deg)   scale(1.02); opacity: 1; }
+    100% { transform: rotate(-12deg)  scale(0.4) translate(-200%, -80%); opacity: 0; }
+  }
+  @keyframes declassify-hatch {
+    0%   { opacity: 0.35; }
+    100% { opacity: 0; }
+  }
+
+  /* Processing overlay during the artificial delay (mimics worker wait) */
+  .processing-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(232, 227, 211, 0.85);
+    z-index: 100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    font-family: 'VT323', monospace;
+  }
+  .processing-overlay.active { display: flex; }
+  .processing-overlay .stamp-large {
+    font-family: 'Special Elite', serif;
+    font-size: 28px;
+    color: var(--stamp-red);
+    border: 3px double var(--stamp-red);
+    padding: 12px 32px;
+    letter-spacing: 6px;
+    transform: rotate(-3deg);
+    margin-bottom: 16px;
+    box-shadow: 4px 4px 0 rgba(139, 42, 42, 0.25);
+  }
+  .processing-overlay .proc-detail {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-faded);
+    letter-spacing: 2px;
+    animation: blink 1s steps(2) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0.3; } }
+
+  /* Scrollbar styling for that dingy terminal feel */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: var(--paper-dark); }
+  ::-webkit-scrollbar-thumb { background: var(--ink-faded); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--ink); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-row">
+    <div>
+      <div class="title">TELEMETRY TRENCH</div>
+      <div class="subtitle">PRACTICE BUREAU // NO REAL TOLL // FRESH ASSETS WELCOME</div>
+    </div>
+    <div class="form-id">
+      ASLEEPIUS GAMES LLC<br/>
+      <strong>FORM TT-PRAC-01 / REV 0.1</strong>
+      <div style="margin-top:8px"><span class="stamp red">UNCERTIFIED</span></div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- LEFT COLUMN: boards + log -->
+  <section>
+
+    <!-- GHOST BOARD (opposition, classified until reveal) -->
+    <div class="panel board-wrap ghost-board classified" id="ghost-panel">
+      <div class="panel-title">
+        OPPOSITION LEDGER // PHANTOM ASSET
+        <span class="form-no">[ FORM 4-B / TERMINATED ]</span>
+      </div>
+      <div class="board-meta">
+        <span id="ghost-meta">PHANTOM POOL: <strong id="ghost-pool">100</strong>   //   LANES STANDING: <strong id="ghost-lanes">4</strong> / 4</span>
+        <span><span id="ghost-source-label">SOURCE: SYNTHETIC</span></span>
+      </div>
+      <div class="integrity-bars" id="ghost-integrity"></div>
+      <div class="grid" id="ghost-grid"></div>
+    </div>
+
+    <!-- PROCESSING OVERLAY (full screen during submission delay) -->
+    <div class="processing-overlay" id="processing-overlay">
+      <div class="stamp-large">PROCESSING</div>
+      <div class="proc-detail" id="proc-detail">// SUBMISSION LOCKED // AWAITING BUREAU RESOLUTION //</div>
+    </div>
+
+    <!-- RESULT BANNER (hidden until simulation) -->
+    <div id="result-banner" style="display:none"></div>
+
+    <!-- PLAYER BOARD -->
+    <div class="panel board-wrap">
+      <div class="panel-title">
+        OPERATOR LEDGER // YOUR LANES
+        <span class="form-no">[ FORM 4-A ]</span>
+      </div>
+      <div class="board-meta">
+        <span id="player-meta">PHANTOM POOL: <strong id="player-pool">100</strong>   //   LANES STANDING: <strong id="player-lanes">4</strong> / 4</span>
+        <span>CURRENCY:&nbsp; <span class="currency" id="currency">120</span></span>
+      </div>
+      <div class="integrity-bars" id="player-integrity"></div>
+      <div class="grid" id="player-grid"></div>
+    </div>
+
+    <!-- TICK BREAKDOWN (visual fight events) -->
+    <div class="panel" id="tick-viz-panel" style="display:none">
+      <div class="panel-title">
+        TICK BREAKDOWN // FIGHT EVENTS
+        <span class="form-no">[ FORM 8-T-VIZ ]</span>
+      </div>
+      <div class="tick-viz" id="tick-viz"></div>
+    </div>
+
+    <!-- COMBAT LOG -->
+    <div class="panel">
+      <div class="panel-title">
+        TICK LEDGER // TRANSCRIPT
+        <span class="form-no">[ FORM 8-T ]</span>
+      </div>
+      <div class="log" id="log"><div class="log-line system">&gt;&gt; awaiting submission. place items. set drift. submit.</div></div>
+    </div>
+
+  </section>
+
+  <!-- RIGHT COLUMN: controls -->
+  <aside>
+
+    <div class="panel">
+      <div class="panel-title">
+        CONTROL PANEL
+        <span class="form-no">[ TT-CTL ]</span>
+      </div>
+
+      <!-- MODE TOGGLE -->
+      <div class="mode-toggle" id="mode-toggle">
+        <button class="mode-btn active" data-mode="progress">PROGRESS</button>
+        <button class="mode-btn" data-mode="test">SANDBOX</button>
+        <button class="mode-btn" data-mode="bureau">BUREAU</button>
+      </div>
+      <div id="mode-detail" class="mode-detail">
+        round-by-round. start at R1. terminate at R4+ death.
+      </div>
+
+      <!-- BUREAU PANEL (visible only in bureau mode) -->
+      <div id="bureau-panel" style="display:none; margin-bottom:14px;">
+        <div class="meta-row" style="margin-top:10px">
+          <span>BUREAU CONNECTION</span>
+          <strong id="bureau-conn-status" style="font-size:10px">— not configured —</strong>
+        </div>
+        <div class="ctrl-row" style="margin-bottom:6px">
+          <button id="bureau-settings-btn" style="flex:1; font-size:10px">CONFIGURE DRIFT URL + ANON KEY</button>
+        </div>
+
+        <div class="meta-row" style="margin-top:10px">
+          <span>SUBMISSION CODE</span>
+          <strong id="bureau-code-status" style="font-size:10px; color:var(--ink-light)">awaiting input</strong>
+        </div>
+        <div class="ctrl-row" style="margin-bottom:4px">
+          <input id="bureau-code-input" type="text" placeholder="TRN-XXXX-XXXX" style="flex:1; text-transform:uppercase; letter-spacing:1px" />
+          <button id="bureau-code-validate" title="check code against drift">CHECK</button>
+        </div>
+        <div id="bureau-code-detail" style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--ink-faded); min-height:14px; margin-bottom:6px;">
+          enter a TRN code to arm bureau submission.
+        </div>
+
+        <div class="ctrl-row" style="margin-bottom:6px">
+          <label style="display:flex; align-items:center; gap:6px; font-size:11px; color:var(--ink-faded); cursor:pointer">
+            <input type="checkbox" id="bureau-pool-toggle" />
+            pull opposition from terminated pool when available
+          </label>
+        </div>
+
+        <div id="bureau-last-result" style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--ink-light); margin-top:6px; min-height:14px;"></div>
+      </div>
+
+      <!-- BUREAU SETTINGS DIALOG (modal-ish, simple) -->
+      <div id="bureau-settings-dialog" style="display:none; position:fixed; inset:0; background:rgba(26,22,18,0.7); z-index:100; align-items:center; justify-content:center;">
+        <div style="background:var(--paper); border:2px solid var(--ink); padding:24px; width:min(520px, 92vw); box-shadow: 6px 6px 0 rgba(0,0,0,0.3);">
+          <div style="font-family:'Special Elite',serif; font-size:16px; margin-bottom:14px; letter-spacing:1px">BUREAU CONNECTION SETTINGS</div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-faded); margin-bottom:14px;">
+            Connects this terminal to the drift backend. Use the <b>anon</b> key only — service role keys must never live in a browser. Stored in this browser's localStorage; cleared on cache wipe.
+          </div>
+          <div style="margin-bottom:10px">
+            <div style="font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--ink-faded); margin-bottom:4px">drift url</div>
+            <input id="bureau-url-input" type="text" placeholder="https://&lt;project-ref&gt;.supabase.co" style="width:100%" />
+          </div>
+          <div style="margin-bottom:14px">
+            <div style="font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--ink-faded); margin-bottom:4px">anon key (eyJ...)</div>
+            <input id="bureau-anon-input" type="password" placeholder="eyJhbGciOi..." style="width:100%; font-family:'IBM Plex Mono',monospace; font-size:10px" />
+          </div>
+          <div style="display:flex; gap:8px; justify-content:flex-end">
+            <button id="bureau-settings-cancel">CANCEL</button>
+            <button id="bureau-settings-clear" class="danger">CLEAR</button>
+            <button id="bureau-settings-save" class="primary">SAVE + TEST</button>
+          </div>
+          <div id="bureau-settings-status" style="font-size:10px; color:var(--ink-faded); margin-top:10px; min-height:14px"></div>
+        </div>
+      </div>
+
+      <!-- LANE UPGRADE -->
+      <div class="upgrade-box" id="upgrade-box">
+        <div class="meta-row" style="margin-bottom:4px">
+          <span>LANE PLATING</span>
+          <strong>LV <span id="upgrade-level">0</span></strong>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--ink-light); margin-bottom:6px;">
+          base integ <span id="upgrade-integ">30</span> &nbsp;/&nbsp; bonus income <span id="upgrade-income">+0</span>G
+        </div>
+        <button id="upgrade-btn" style="width:100%">
+          REINFORCE — <span id="upgrade-cost">80</span>G &nbsp;(+5 INTEG, +3 INCOME)
+        </button>
+      </div>
+
+      <div class="meta-row" style="margin-top:14px">
+        <span>DRIFT SCORE</span>
+        <strong id="drift-display">0.50</strong>
+      </div>
+      <div class="ctrl-row" style="margin-bottom:14px">
+        <input id="drift-slider" type="range" min="0" max="100" value="50" step="1" />
+      </div>
+
+      <div class="meta-row">
+        <span>SEED</span>
+        <strong id="seed-display" style="font-size:10px">randomize</strong>
+      </div>
+      <div class="ctrl-row" style="margin-bottom:14px">
+        <input id="seed-input" type="text" placeholder="hex seed (auto)" style="flex:1" />
+        <button id="seed-random" title="generate random seed">RND</button>
+      </div>
+
+      <div class="meta-row">
+        <span>OPPOSITION POOL</span>
+      </div>
+      <div class="ctrl-row" style="margin-bottom:4px">
+        <select id="ghost-select" style="flex:1">
+          <option value="synthetic_aggressive">Aggressive Profile (R3)</option>
+          <option value="synthetic_capacitor">Capacitor-Heavy Profile (R5)</option>
+          <option value="synthetic_defensive">Defensive Profile (R4)</option>
+          <option value="synthetic_balanced">Balanced Profile (R2)</option>
+          <option value="synthetic_late_game">Late-Game Profile (R7)</option>
+          <option value="empty">Unopposed (Empty)</option>
+        </select>
+      </div>
+      <div style="font-family:'Special Elite',serif; font-size:9px; color:var(--ink-light); letter-spacing:1px; margin-bottom:14px;">
+        opposition layout is classified until submission resolves.
+      </div>
+
+      <!-- ROUND DISPLAY (progress mode) / SLIDER (test mode) -->
+      <div class="meta-row" style="margin-top:6px">
+        <span>ROUND</span>
+        <strong id="round-display">1</strong>
+      </div>
+      <div class="ctrl-row" id="round-slider-row" style="display:none">
+        <input id="round-slider" type="range" min="1" max="10" value="3" step="1" style="flex:1" />
+      </div>
+      <div id="progress-status" style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--ink-faded); margin-top:2px; min-height:14px">
+        run active // ph.pool 100/100
+      </div>
+
+      <hr style="border:none; border-top:1px dashed var(--ink-faded); margin:14px 0" />
+
+      <div class="ctrl-row">
+        <button class="primary" id="submit-btn" style="flex:1">SUBMIT TURN</button>
+      </div>
+      <div class="ctrl-row">
+        <button id="clear-btn" style="flex:1">CLEAR BOARD</button>
+        <button class="danger" id="reset-btn">NEW RUN</button>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:14px">
+      <div class="panel-title">
+        ITEM CATALOG
+        <span class="form-no">[ TT-CAT ]</span>
+      </div>
+      <div class="selected-info" id="selected-info">
+        <div class="si-title">— SELECT AN ITEM —</div>
+        <div class="si-blurb">Click an item below, then click a cell in your ledger to place. Click an occupied cell to remove and refund.</div>
+      </div>
+      <div class="shop-list" id="shop-list"></div>
+    </div>
+
+    <div class="footer-note" id="footer-note">
+      practice mode. no toll burned. no character recorded.<br/>
+      drift score is dialed manually here. in the trench, the bureau decides.
+    </div>
+
+  </aside>
+</main>
+
+<script>
+// ====== INLINED COMBAT ENGINE (v0.1.0) — see combat_engine.js for canonical source ======
+// ============================================================================
+// combat_engine.js
+// ----------------------------------------------------------------------------
+// Pure deterministic combat engine for Telemetry Trench.
+//
+// CONTRACT:
+//   - No DOM, no fs, no network. Pure compute.
+//   - Same input always yields same output (seeded PRNG, no Date.now(), no Math.random()).
+//   - Importable in browser AND in Node.js worker subprocess.
+//   - Items catalog passed in as parameter (engine does not load files).
+//
+// USAGE:
+//   import { simulate, ENGINE_VERSION } from './combat_engine.js';
+//   const result = simulate({
+//     player_board, ghost_board, drift_score, seed, round_number, items_catalog
+//   });
+//
+// Asleepius Games LLC — Telemetry Trench — v0.1.0
+// ============================================================================
+
+const ENGINE_VERSION = "0.1.0";
+
+// ============================================================================
+// 1. DETERMINISTIC PRNG (mulberry32)
+// ----------------------------------------------------------------------------
+// Seed is a hex string (typically sha256 output). We take the first 32 bits
+// as the PRNG state. mulberry32 is a simple, fast, well-tested deterministic
+// PRNG with good statistical properties for game randomness.
+// ============================================================================
+
+function makePRNG(seedHex) {
+  if (typeof seedHex !== "string" || seedHex.length < 8) {
+    throw new Error("seed must be a hex string of at least 8 chars");
+  }
+  let a = parseInt(seedHex.slice(0, 8), 16) | 0;
+  return function () {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Roll an integer in [min, max] inclusive using the PRNG.
+function rollInt(prng, min, max) {
+  if (max < min) return min;
+  return Math.floor(min + prng() * (max - min + 1));
+}
+
+// ============================================================================
+// 2. BOARD HELPERS
+// ----------------------------------------------------------------------------
+// Boards are arrays of placements: [{item_id, lane, tick}, ...]
+// Lanes: 1..4. Ticks: 1..8. At most one item per (lane, tick) cell.
+// ============================================================================
+
+function indexBoard(board) {
+  // Returns { byCell: Map("lane:tick" -> placement), byLane: {1:[], 2:[], 3:[], 4:[]} }
+  const byCell = new Map();
+  const byLane = { 1: [], 2: [], 3: [], 4: [] };
+  for (const p of board) {
+    byCell.set(`${p.lane}:${p.tick}`, p);
+    if (byLane[p.lane]) byLane[p.lane].push(p);
+  }
+  for (const lane of [1, 2, 3, 4]) {
+    byLane[lane].sort((a, b) => a.tick - b.tick);
+  }
+  return { byCell, byLane };
+}
+
+function getItemAt(idx, lane, tick) {
+  return idx.byCell.get(`${lane}:${tick}`) || null;
+}
+
+function emptyTicksBehind(idx, lane, tick) {
+  // Count contiguous empty ticks before this one on the same lane.
+  let count = 0;
+  for (let t = tick - 1; t >= 1; t--) {
+    if (idx.byCell.has(`${lane}:${t}`)) break;
+    count++;
+  }
+  return count;
+}
+
+function emptyTicksAhead(idx, lane, tick) {
+  let count = 0;
+  for (let t = tick + 1; t <= 8; t++) {
+    if (idx.byCell.has(`${lane}:${t}`)) break;
+    count++;
+  }
+  return count;
+}
+
+function laneHasItemOfType(idx, lane, itemId) {
+  return idx.byLane[lane].some((p) => p.item_id === itemId);
+}
+
+function laneItemOfType(idx, lane, itemId) {
+  return idx.byLane[lane].find((p) => p.item_id === itemId) || null;
+}
+
+// ============================================================================
+// 3. CHARGE CALCULATION
+// ----------------------------------------------------------------------------
+// Given a placement and the full board context, compute its effective charge
+// count for this combat. Returns a number (>= 0). Returns 0 if the item is
+// "consumed" by a Drain Pole behind it.
+//
+// Order of operations:
+//   1. base = emptyTicksBehind
+//   2. Echo Capacitor on this lane → base counts double (with overflow bonus)
+//   3. Inversion Plate on this lane → add emptyTicksAhead
+//   4. Drain Pole at tick-1 on this lane → double charges, mark forward as consumed
+//      (handled at consumption-resolution layer, not here)
+//   5. Sink on enemy side at SAME tick column → subtract 1 (floored at 0)
+//   6. Drift modifier applies to max_charge ceiling at fire-time, not here
+// ============================================================================
+
+function computeCharges({
+  placement,
+  ownIdx,
+  enemyIdx,
+  itemsCatalog,
+  consumedSet,
+}) {
+  const { lane, tick } = placement;
+
+  // If this item was consumed by a Drain Pole behind it, it can't charge.
+  if (consumedSet.has(`${lane}:${tick}`)) return { charges: 0, consumed: true };
+
+  // 1. Base charge: empty ticks behind on same lane
+  let charges = emptyTicksBehind(ownIdx, lane, tick);
+
+  // 2. Echo Capacitor on this lane — find one (if multiple, take strongest)
+  const echo = laneItemOfType(ownIdx, lane, "echo_capacitor");
+  if (echo && echo.tick < tick) {
+    // Echo's own charge level determines multiplier strength.
+    const echoCharges = emptyTicksBehind(ownIdx, lane, echo.tick);
+    const echoItem = itemsCatalog["echo_capacitor"];
+    if (echoCharges >= echoItem.min_charge) {
+      const overflow = Math.max(0, echoCharges - (echoItem.soft_max || 3));
+      const mult =
+        echoItem.effect.multiplier_base +
+        overflow * echoItem.effect.multiplier_per_overflow;
+      charges = Math.floor(charges * mult);
+    }
+  }
+
+  // 3. Inversion Plate on this lane — empty ticks ahead also count
+  const inv = laneItemOfType(ownIdx, lane, "inversion_plate");
+  if (inv && inv.tick !== tick) {
+    const invCharges = emptyTicksBehind(ownIdx, lane, inv.tick);
+    const invItem = itemsCatalog["inversion_plate"];
+    if (invCharges >= invItem.min_charge) {
+      charges += emptyTicksAhead(ownIdx, lane, tick);
+    }
+  }
+
+  // 4. Drain Pole at lane:tick-1 → doubles this item's effective charges,
+  //    consumes this item. Handled separately at the resolution layer:
+  //    if THIS placement is "consumed", we don't fire (handled in §5).
+  //    The Drain Pole itself, when resolved, gets its own charges doubled.
+  const drainAtPrev = getItemAt(ownIdx, lane, tick - 1);
+  if (placement.item_id === "drain_pole") {
+    // We ARE the drain pole. Get our own charges from emptyTicksBehind,
+    // then double them as our effect.
+    const drainCharges = emptyTicksBehind(ownIdx, lane, tick);
+    const drainItem = itemsCatalog["drain_pole"];
+    if (drainCharges >= drainItem.min_charge) {
+      charges = drainCharges * 2;
+    }
+  } else if (drainAtPrev && drainAtPrev.item_id === "drain_pole") {
+    // We're being consumed by the drain pole behind us — mark and bail.
+    return { charges: 0, consumed: true };
+  }
+
+  // 5. Sink on enemy side at same tick column → -1 charge
+  for (let l = 1; l <= 4; l++) {
+    const enemyItem = getItemAt(enemyIdx, l, tick);
+    if (enemyItem && enemyItem.item_id === "sink") {
+      // Sink applies to the player item in the SAME tick column, ANY lane.
+      // (Reading: a sink on the enemy's lane 2 at tick 5 reduces ALL player
+      //  items at tick 5 by 1 charge. This is intentional — sinks are
+      //  broad-spectrum anti-overclock tech, not lane-locked.)
+      charges = Math.max(0, charges - 1);
+      break; // multiple sinks at same tick don't stack — keep it simple
+    }
+  }
+
+  return { charges: Math.max(0, charges), consumed: false };
+}
+
+// ============================================================================
+// 4. DAMAGE ROLL
+// ----------------------------------------------------------------------------
+// Given an item and its effective charges, return a damage roll.
+// Capped: max_roll scales linearly from min to max as charges/max_charge.
+// Uncapped: at soft_max charges = full max; each additional charge adds
+//           +25% of (max-min) to the upper bound. Linear scaling continues.
+// ============================================================================
+
+function rollDamage(item, charges, prng, driftMaxChargeBonus) {
+  const dMin = item.effect.damage_min;
+  const dMax = item.effect.damage_max;
+
+  // Drift modifies the effective max_charge ceiling, NOT the charges themselves.
+  // So a max_charge=3 item with drift +1 effectively scales toward max at 4 charges.
+  let effectiveMax;
+  let chargeRatio;
+
+  if (item.max_charge === "uncapped") {
+    const softMax = (item.soft_max || 3) + driftMaxChargeBonus;
+    const baseScale = Math.min(1.0, charges / Math.max(1, softMax));
+    const overflow = Math.max(0, charges - softMax);
+    const upper = dMin + (dMax - dMin) * (baseScale + overflow * 0.25);
+    return rollInt(prng, dMin, Math.floor(upper));
+  } else {
+    effectiveMax = item.max_charge + driftMaxChargeBonus;
+    if (effectiveMax <= 0) {
+      // drift squeeze took the ceiling to zero — item rolls minimum
+      return dMin;
+    }
+    chargeRatio = Math.min(1.0, charges / effectiveMax);
+    const upper = dMin + (dMax - dMin) * chargeRatio;
+    return rollInt(prng, dMin, Math.floor(upper));
+  }
+}
+
+// Generic range roll for non-damage effects (reflect %, integrity bonus, etc.)
+function rollRange(prng, min, max, charges, maxCharge, driftMaxChargeBonus) {
+  if (maxCharge === "uncapped" || maxCharge === 0) {
+    // For binary or uncapped non-damage, just use min/max directly with ratio.
+    if (maxCharge === 0) return Math.floor((min + max) / 2);
+  }
+  const effectiveMax = (maxCharge || 1) + driftMaxChargeBonus;
+  if (effectiveMax <= 0) return min;
+  const ratio = Math.min(1.0, charges / effectiveMax);
+  const upper = min + (max - min) * ratio;
+  return rollInt(prng, min, Math.floor(upper));
+}
+
+// ============================================================================
+// 5. PRE-COMBAT: PASSIVES + CONSUMPTION SETUP
+// ----------------------------------------------------------------------------
+// Before tick 1, resolve all passives (Shroud Plate adds lane integrity) and
+// build the set of "consumed" cells (items eaten by Drain Poles behind them).
+// ============================================================================
+
+function applyPassivesAndConsumption({
+  board,
+  state,
+  itemsCatalog,
+  prng,
+  driftMaxChargeBonus,
+  ownIdx,
+  log,
+  side,
+}) {
+  const consumed = new Set();
+
+  // Drain Pole consumption: each drain pole at (lane, tick) consumes the item
+  // at (lane, tick+1), if any.
+  for (const p of board) {
+    if (p.item_id === "drain_pole") {
+      const drainItem = itemsCatalog["drain_pole"];
+      const drainCharges = emptyTicksBehind(ownIdx, p.lane, p.tick);
+      if (drainCharges >= drainItem.min_charge) {
+        const forward = getItemAt(ownIdx, p.lane, p.tick + 1);
+        if (forward) {
+          consumed.add(`${p.lane}:${p.tick + 1}`);
+          log.push({
+            phase: "pre_combat",
+            actor: side,
+            event: "drain_pole_consumed",
+            lane: p.lane,
+            tick: p.tick,
+            consumed: { item: forward.item_id, at_tick: p.tick + 1 },
+          });
+        }
+      }
+    }
+  }
+
+  // Shroud Plates: passive lane integrity bonus.
+  for (const p of board) {
+    if (consumed.has(`${p.lane}:${p.tick}`)) continue;
+    if (p.item_id !== "shroud_plate") continue;
+    const item = itemsCatalog["shroud_plate"];
+    const charges = emptyTicksBehind(ownIdx, p.lane, p.tick);
+    if (charges < item.min_charge) continue;
+    const bonus = rollRange(
+      prng,
+      item.effect.bonus_min,
+      item.effect.bonus_max,
+      charges,
+      item.max_charge,
+      driftMaxChargeBonus
+    );
+    state.lane_integrity[p.lane - 1] += bonus;
+    log.push({
+      phase: "pre_combat",
+      actor: side,
+      event: "shroud_plate",
+      lane: p.lane,
+      tick: p.tick,
+      charges,
+      bonus,
+      lane_integrity_after: state.lane_integrity[p.lane - 1],
+    });
+  }
+
+  return consumed;
+}
+
+// ============================================================================
+// 6. DAMAGE APPLICATION
+// ----------------------------------------------------------------------------
+// Apply damage to a target's lane. Handles:
+//   - Static Cage blocking the FIRST damage source on that lane (consumed once)
+//   - Reflector Coil reflecting a % back
+//   - Aegis Loop preventing collapse once per round
+//   - Lane integrity → spillover to phantom_pool when lane collapses
+// ============================================================================
+
+function applyDamageToLane({
+  attackerSide,
+  defenderState,
+  defenderIdx,
+  defenderBoard,
+  targetLane,
+  rawDamage,
+  itemsCatalog,
+  log,
+  tick,
+  sourceItem,
+  sourceLane,
+}) {
+  if (rawDamage <= 0) return { damage_dealt: 0, reflected: 0 };
+
+  // Static Cage check: blocks the first damage source on this lane per round.
+  const cagePlace = laneItemOfType(defenderIdx, targetLane, "static_cage");
+  if (cagePlace && !defenderState.cage_used[targetLane]) {
+    const cageItem = itemsCatalog["static_cage"];
+    const cageCharges = emptyTicksBehind(defenderIdx, targetLane, cagePlace.tick);
+    if (cageCharges >= cageItem.min_charge) {
+      defenderState.cage_used[targetLane] = true;
+      log.push({
+        phase: "combat",
+        tick,
+        actor: attackerSide,
+        event: "static_cage_block",
+        defender_lane: targetLane,
+        blocked_item: sourceItem,
+        blocked_damage: rawDamage,
+      });
+      return { damage_dealt: 0, reflected: 0, blocked: true };
+    }
+  }
+
+  // Reflector Coil: reflects a % of the damage back at the attacker's same lane.
+  let reflected = 0;
+  const reflPlace = laneItemOfType(defenderIdx, targetLane, "reflector_coil");
+  if (reflPlace) {
+    const reflItem = itemsCatalog["reflector_coil"];
+    const reflCharges = emptyTicksBehind(defenderIdx, targetLane, reflPlace.tick);
+    if (reflCharges >= reflItem.min_charge) {
+      const pct = rollRange(
+        defenderState._prng,
+        reflItem.effect.reflect_pct_min,
+        reflItem.effect.reflect_pct_max,
+        reflCharges,
+        reflItem.max_charge,
+        defenderState._driftBonus
+      );
+      reflected = Math.floor((rawDamage * pct) / 100);
+    }
+  }
+
+  // Apply to lane integrity first; spill to phantom_pool if lane collapses.
+  let remaining = rawDamage;
+  const laneIdx = targetLane - 1;
+  if (defenderState.lane_integrity[laneIdx] > 0) {
+    const absorb = Math.min(defenderState.lane_integrity[laneIdx], remaining);
+    defenderState.lane_integrity[laneIdx] -= absorb;
+    remaining -= absorb;
+    if (defenderState.lane_integrity[laneIdx] === 0 && !defenderState.lanes_collapsed.includes(targetLane)) {
+      // Check Aegis Loop save
+      const aegis = laneItemOfType(defenderIdx, targetLane, "aegis_loop");
+      if (aegis && !defenderState.aegis_used[targetLane]) {
+        const aegisItem = itemsCatalog["aegis_loop"];
+        const aegisCharges = emptyTicksBehind(defenderIdx, targetLane, aegis.tick);
+        if (aegisCharges >= aegisItem.min_charge) {
+          defenderState.aegis_used[targetLane] = true;
+          defenderState.lane_integrity[laneIdx] = 5; // emergency restore
+          log.push({
+            phase: "combat",
+            tick,
+            event: "aegis_loop_save",
+            actor: attackerSide === "player" ? "ghost" : "player",
+            lane: targetLane,
+            restored_to: 5,
+          });
+        } else {
+          defenderState.lanes_collapsed.push(targetLane);
+        }
+      } else {
+        defenderState.lanes_collapsed.push(targetLane);
+      }
+    }
+  }
+  // Spillover into phantom_pool
+  if (remaining > 0) {
+    defenderState.phantom_pool = Math.max(0, defenderState.phantom_pool - remaining);
+  }
+
+  return { damage_dealt: rawDamage, reflected, blocked: false };
+}
+
+// ============================================================================
+// 7. TICK RESOLUTION
+// ----------------------------------------------------------------------------
+// For a given tick, resolve all items that fire this tick on both boards.
+// Order within a tick:
+//   1. Compute all damage rolls (player + ghost) — no state mutation yet
+//   2. Apply Cascade (damage copies to adjacent lanes) on both sides
+//   3. Apply Drift Tap multipliers per lane (additive across taps on that lane)
+//   4. Apply Keyword Forge burst on tick 4 (drift_score * 10 to that lane)
+//   5. Apply damage to defenders (Static Cage → Reflector → Integrity → Pool)
+//   6. Apply reflected damage to attackers
+// ============================================================================
+
+function getFiringEvents(board, idx, tick, itemsCatalog) {
+  // Returns [{ placement, item, charges, fires_this_tick }, ...]
+  const events = [];
+  for (const p of board) {
+    const item = itemsCatalog[p.item_id];
+    if (!item) continue;
+    const t = item.effect.type;
+    let firesThisTick = false;
+
+    if (t === "damage_on_placed_tick" && p.tick === tick) firesThisTick = true;
+    else if (t === "damage_on_tick_8" && tick === 8) firesThisTick = true;
+    else if (t === "damage_twice_placement_and_eight" && (p.tick === tick || tick === 8)) {
+      // Avoid double-firing if placed on tick 8
+      if (p.tick === 8 && tick === 8) firesThisTick = true; // only once
+      else if (p.tick === tick) firesThisTick = true;
+      else if (tick === 8) firesThisTick = true;
+    } else if (t === "damage_every_other_tick" && p.tick <= tick && (tick - p.tick) % 2 === 0) {
+      firesThisTick = true;
+    } else if (t === "drift_burst_on_tick_4" && tick === 4) {
+      firesThisTick = true;
+    }
+
+    if (firesThisTick) events.push({ placement: p, item });
+  }
+  return events;
+}
+
+function resolveTick({
+  tick,
+  playerBoard,
+  ghostBoard,
+  playerIdx,
+  ghostIdx,
+  playerState,
+  ghostState,
+  playerConsumed,
+  ghostConsumed,
+  itemsCatalog,
+  prng,
+  driftScore,
+  driftMaxChargeBonus,
+  log,
+}) {
+  // Phase A: compute raw damage rolls and queue them
+  const queueDamage = (side, ownIdx, enemyIdx, ownConsumed, ownBoard) => {
+    const events = getFiringEvents(ownBoard, ownIdx, tick, itemsCatalog);
+    const out = [];
+    for (const ev of events) {
+      const { placement, item } = ev;
+      if (ownConsumed.has(`${placement.lane}:${placement.tick}`)) continue;
+
+      // Charges
+      const { charges } = computeCharges({
+        placement,
+        ownIdx,
+        enemyIdx,
+        itemsCatalog,
+        consumedSet: ownConsumed,
+      });
+      if (charges < item.min_charge) {
+        log.push({
+          phase: "combat",
+          tick,
+          actor: side,
+          event: "misfire",
+          lane: placement.lane,
+          item: placement.item_id,
+          charges,
+          min_required: item.min_charge,
+        });
+        continue;
+      }
+
+      // Damage
+      let damage = 0;
+      if (item.effect.type === "drift_burst_on_tick_4") {
+        damage = Math.floor(driftScore * item.effect.drift_multiplier);
+      } else {
+        damage = rollDamage(item, charges, prng, driftMaxChargeBonus);
+      }
+
+      out.push({
+        side,
+        placement,
+        item,
+        charges,
+        damage_base: damage,
+        target_lane: placement.lane,
+      });
+    }
+    return out;
+  };
+
+  const playerEvents = queueDamage("player", playerIdx, ghostIdx, playerConsumed, playerBoard);
+  const ghostEvents = queueDamage("ghost", ghostIdx, playerIdx, ghostConsumed, ghostBoard);
+
+  // Phase B: apply Drift Tap multipliers per lane (additive across taps)
+  const applyDriftTap = (events, ownIdx) => {
+    for (const ev of events) {
+      const tap = laneItemOfType(ownIdx, ev.placement.lane, "drift_tap");
+      if (!tap) continue;
+      const tapItem = itemsCatalog["drift_tap"];
+      const tapCharges = emptyTicksBehind(ownIdx, ev.placement.lane, tap.tick);
+      if (tapCharges < tapItem.min_charge) continue;
+      const effectiveTapCharges = Math.min(tapCharges, tapItem.max_charge + driftMaxChargeBonus);
+      const mult = 1 + effectiveTapCharges * tapItem.effect.per_charge_bonus;
+      ev.damage_after_drift_tap = Math.floor(ev.damage_base * mult);
+    }
+    for (const ev of events) {
+      if (ev.damage_after_drift_tap === undefined) ev.damage_after_drift_tap = ev.damage_base;
+    }
+  };
+  applyDriftTap(playerEvents, playerIdx);
+  applyDriftTap(ghostEvents, ghostIdx);
+
+  // Phase C: Cascade — copy lane damage to adjacent lanes
+  const applyCascade = (events, ownIdx) => {
+    const extras = [];
+    for (const ev of events) {
+      if (ev.item.effect.type !== "drift_burst_on_tick_4" &&
+          !["damage_on_placed_tick", "damage_on_tick_8", "damage_twice_placement_and_eight", "damage_every_other_tick"].includes(ev.item.effect.type)) {
+        continue;
+      }
+      const cas = laneItemOfType(ownIdx, ev.placement.lane, "cascade");
+      if (!cas) continue;
+      const casItem = itemsCatalog["cascade"];
+      const casCharges = emptyTicksBehind(ownIdx, ev.placement.lane, cas.tick);
+      if (casCharges < casItem.min_charge) continue;
+      const effective = Math.min(casCharges, casItem.max_charge + driftMaxChargeBonus);
+      const ratio = (effective - casItem.min_charge) / Math.max(1, casItem.max_charge - casItem.min_charge);
+      const copyPct =
+        casItem.effect.copy_pct_at_min +
+        (casItem.effect.copy_pct_at_max - casItem.effect.copy_pct_at_min) * ratio;
+      const copied = Math.floor((ev.damage_after_drift_tap * copyPct) / 100);
+      const adjacents = [ev.placement.lane - 1, ev.placement.lane + 1].filter((l) => l >= 1 && l <= 4);
+      for (const adj of adjacents) {
+        extras.push({
+          side: ev.side,
+          placement: ev.placement,
+          item: ev.item,
+          charges: ev.charges,
+          damage_base: copied,
+          damage_after_drift_tap: copied,
+          target_lane: adj,
+          via_cascade: true,
+        });
+      }
+    }
+    return extras;
+  };
+  const playerCascades = applyCascade(playerEvents, playerIdx);
+  const ghostCascades = applyCascade(ghostEvents, ghostIdx);
+  playerEvents.push(...playerCascades);
+  ghostEvents.push(...ghostCascades);
+
+  // Phase D: apply damage. Player attacks ghost. Ghost attacks player.
+  playerState._prng = prng;
+  playerState._driftBonus = driftMaxChargeBonus;
+  ghostState._prng = prng;
+  ghostState._driftBonus = driftMaxChargeBonus;
+
+  const reflectsBackToPlayer = [];
+  const reflectsBackToGhost = [];
+
+  for (const ev of playerEvents) {
+    const res = applyDamageToLane({
+      attackerSide: "player",
+      defenderState: ghostState,
+      defenderIdx: ghostIdx,
+      defenderBoard: ghostBoard,
+      targetLane: ev.target_lane,
+      rawDamage: ev.damage_after_drift_tap,
+      itemsCatalog,
+      log,
+      tick,
+      sourceItem: ev.placement.item_id,
+      sourceLane: ev.placement.lane,
+    });
+    log.push({
+      phase: "combat",
+      tick,
+      actor: "player",
+      event: "fire",
+      lane: ev.placement.lane,
+      target_lane: ev.target_lane,
+      item: ev.placement.item_id,
+      charges: ev.charges,
+      damage_rolled: ev.damage_base,
+      damage_after_drift_tap: ev.damage_after_drift_tap,
+      damage_dealt: res.damage_dealt,
+      blocked: !!res.blocked,
+      via_cascade: !!ev.via_cascade,
+      ghost_lane_integrity: ghostState.lane_integrity[ev.target_lane - 1],
+      ghost_phantom_pool: ghostState.phantom_pool,
+    });
+    if (res.reflected > 0) reflectsBackToPlayer.push({ lane: ev.placement.lane, dmg: res.reflected });
+  }
+
+  for (const ev of ghostEvents) {
+    const res = applyDamageToLane({
+      attackerSide: "ghost",
+      defenderState: playerState,
+      defenderIdx: playerIdx,
+      defenderBoard: playerBoard,
+      targetLane: ev.target_lane,
+      rawDamage: ev.damage_after_drift_tap,
+      itemsCatalog,
+      log,
+      tick,
+      sourceItem: ev.placement.item_id,
+      sourceLane: ev.placement.lane,
+    });
+    log.push({
+      phase: "combat",
+      tick,
+      actor: "ghost",
+      event: "fire",
+      lane: ev.placement.lane,
+      target_lane: ev.target_lane,
+      item: ev.placement.item_id,
+      charges: ev.charges,
+      damage_rolled: ev.damage_base,
+      damage_after_drift_tap: ev.damage_after_drift_tap,
+      damage_dealt: res.damage_dealt,
+      blocked: !!res.blocked,
+      via_cascade: !!ev.via_cascade,
+      player_lane_integrity: playerState.lane_integrity[ev.target_lane - 1],
+      player_phantom_pool: playerState.phantom_pool,
+    });
+    if (res.reflected > 0) reflectsBackToGhost.push({ lane: ev.placement.lane, dmg: res.reflected });
+  }
+
+  // Phase E: reflected damage applied back. Reflects can't trigger reflects.
+  for (const r of reflectsBackToPlayer) {
+    const laneIdx = r.lane - 1;
+    if (playerState.lane_integrity[laneIdx] > 0) {
+      const absorb = Math.min(playerState.lane_integrity[laneIdx], r.dmg);
+      playerState.lane_integrity[laneIdx] -= absorb;
+      const spill = r.dmg - absorb;
+      if (spill > 0) playerState.phantom_pool = Math.max(0, playerState.phantom_pool - spill);
+    } else {
+      playerState.phantom_pool = Math.max(0, playerState.phantom_pool - r.dmg);
+    }
+    log.push({
+      phase: "combat",
+      tick,
+      event: "reflect_back",
+      actor: "ghost",
+      target_lane: r.lane,
+      damage: r.dmg,
+      player_phantom_pool: playerState.phantom_pool,
+    });
+  }
+  for (const r of reflectsBackToGhost) {
+    const laneIdx = r.lane - 1;
+    if (ghostState.lane_integrity[laneIdx] > 0) {
+      const absorb = Math.min(ghostState.lane_integrity[laneIdx], r.dmg);
+      ghostState.lane_integrity[laneIdx] -= absorb;
+      const spill = r.dmg - absorb;
+      if (spill > 0) ghostState.phantom_pool = Math.max(0, ghostState.phantom_pool - spill);
+    } else {
+      ghostState.phantom_pool = Math.max(0, ghostState.phantom_pool - r.dmg);
+    }
+    log.push({
+      phase: "combat",
+      tick,
+      event: "reflect_back",
+      actor: "player",
+      target_lane: r.lane,
+      damage: r.dmg,
+      ghost_phantom_pool: ghostState.phantom_pool,
+    });
+  }
+}
+
+// ============================================================================
+// 8. WINNER DETERMINATION
+// ----------------------------------------------------------------------------
+// player wins if: ghost phantom_pool <= 0 OR all 4 ghost lanes collapsed OR
+//                  total damage dealt by player > total damage dealt by ghost
+// ghost wins  if: player phantom_pool <= 0 OR all 4 player lanes collapsed OR
+//                  total damage dealt by ghost > total damage dealt by player
+// draw       if: both phantom_pools equal and damage tallies equal
+// ============================================================================
+
+function determineWinner(playerState, ghostState, log) {
+  if (ghostState.phantom_pool <= 0) return "player";
+  if (playerState.phantom_pool <= 0) return "ghost";
+  if (ghostState.lanes_collapsed.length === 4) return "player";
+  if (playerState.lanes_collapsed.length === 4) return "ghost";
+
+  // Damage tally tiebreaker (sum of damage_dealt events)
+  let playerDmg = 0, ghostDmg = 0;
+  for (const ev of log) {
+    if (ev.event !== "fire") continue;
+    if (ev.actor === "player") playerDmg += ev.damage_dealt || 0;
+    else if (ev.actor === "ghost") ghostDmg += ev.damage_dealt || 0;
+  }
+  if (playerDmg > ghostDmg) return "player";
+  if (ghostDmg > playerDmg) return "ghost";
+  return "draw";
+}
+
+// ============================================================================
+// 9. PUBLIC API: simulate(input)
+// ============================================================================
+
+function simulate(input) {
+  const {
+    player_board,
+    ghost_board,
+    drift_score,
+    seed,
+    round_number,
+    items_catalog,
+    player_starting_state,
+    ghost_starting_state,
+  } = input;
+
+  if (!Array.isArray(player_board)) throw new Error("player_board must be array");
+  if (!Array.isArray(ghost_board)) throw new Error("ghost_board must be array");
+  if (typeof drift_score !== "number") throw new Error("drift_score must be number");
+  if (typeof seed !== "string") throw new Error("seed must be string");
+  if (!items_catalog || typeof items_catalog !== "object")
+    throw new Error("items_catalog required");
+
+  const clampedDrift = Math.max(0, Math.min(1, drift_score));
+  const driftMaxChargeBonus =
+    clampedDrift >= 0.75 ? 1 : clampedDrift <= 0.25 ? -1 : 0;
+
+  const prng = makePRNG(seed);
+
+  // Starting state: optional inputs override defaults. Both sides may carry
+  // phantom_pool across rounds, and lane_integrity may be upgraded.
+  const defaultIntegrity = () => [30, 30, 30, 30];
+  const playerState = {
+    phantom_pool: (player_starting_state && typeof player_starting_state.phantom_pool === "number")
+      ? player_starting_state.phantom_pool : 100,
+    lane_integrity: (player_starting_state && Array.isArray(player_starting_state.lane_integrity) && player_starting_state.lane_integrity.length === 4)
+      ? player_starting_state.lane_integrity.slice() : defaultIntegrity(),
+    lanes_collapsed: [],
+    cage_used: {},
+    aegis_used: {},
+  };
+  const ghostState = {
+    phantom_pool: (ghost_starting_state && typeof ghost_starting_state.phantom_pool === "number")
+      ? ghost_starting_state.phantom_pool : 100,
+    lane_integrity: (ghost_starting_state && Array.isArray(ghost_starting_state.lane_integrity) && ghost_starting_state.lane_integrity.length === 4)
+      ? ghost_starting_state.lane_integrity.slice() : defaultIntegrity(),
+    lanes_collapsed: [],
+    cage_used: {},
+    aegis_used: {},
+  };
+
+  const playerIdx = indexBoard(player_board);
+  const ghostIdx = indexBoard(ghost_board);
+
+  const log = [];
+
+  // Pre-combat: passives + consumption mapping
+  const playerConsumed = applyPassivesAndConsumption({
+    board: player_board,
+    state: playerState,
+    itemsCatalog: items_catalog,
+    prng,
+    driftMaxChargeBonus,
+    ownIdx: playerIdx,
+    log,
+    side: "player",
+  });
+  const ghostConsumed = applyPassivesAndConsumption({
+    board: ghost_board,
+    state: ghostState,
+    itemsCatalog: items_catalog,
+    prng,
+    driftMaxChargeBonus,
+    ownIdx: ghostIdx,
+    log,
+    side: "ghost",
+  });
+
+  // Combat loop: 8 ticks
+  for (let tick = 1; tick <= 8; tick++) {
+    // Early termination if either side is dead
+    if (playerState.phantom_pool <= 0 || ghostState.phantom_pool <= 0) break;
+
+    resolveTick({
+      tick,
+      playerBoard: player_board,
+      ghostBoard: ghost_board,
+      playerIdx,
+      ghostIdx,
+      playerState,
+      ghostState,
+      playerConsumed,
+      ghostConsumed,
+      itemsCatalog: items_catalog,
+      prng,
+      driftScore: clampedDrift,
+      driftMaxChargeBonus,
+      log,
+    });
+  }
+
+  // Strip internal fields before returning
+  const cleanState = (s) => ({
+    phantom_pool: s.phantom_pool,
+    lane_integrity: s.lane_integrity.slice(),
+    lanes_collapsed: s.lanes_collapsed.slice(),
+  });
+
+  const winner = determineWinner(playerState, ghostState, log);
+
+  return {
+    tick_log: log,
+    final_state: {
+      player: cleanState(playerState),
+      ghost: cleanState(ghostState),
+    },
+    winner,
+    drift_score_used: clampedDrift,
+    max_charge_modifier: driftMaxChargeBonus,
+    seed,
+    round_number,
+    engine_version: ENGINE_VERSION,
+  };
+}
+
+// ============================================================================
+// Default export for environments that prefer it
+// ============================================================================
+// (default export omitted in inline mode)
+
+// ====== END INLINED ENGINE ======
+
+// ====== INLINED ITEMS CATALOG — see trench_items.json for canonical source ======
+const INLINED_CATALOG = {
+  "version": "0.1.0",
+  "spec_notes": "Telemetry Trench item catalog. Loaded by combat_engine.js at runtime. Item IDs are stable identifiers — never rename, only deprecate. Effect.type values are interpreted by combat_engine.js handlers; adding a new type requires an engine update.",
+  "items": [
+    {
+      "id": "matrix_bolt",
+      "name": "Matrix Bolt",
+      "category": "damage",
+      "cost": 40,
+      "min_charge": 0,
+      "max_charge": 3,
+      "effect": {
+        "type": "damage_on_placed_tick",
+        "damage_min": 4,
+        "damage_max": 10
+      },
+      "blurb": "Standard-issue lane crackle. Fires once on the tick it's placed. Smooth scaling.",
+      "form_number": "MX-04"
+    },
+    {
+      "id": "drift_lance",
+      "name": "Drift Lance",
+      "category": "damage",
+      "cost": 80,
+      "min_charge": 1,
+      "max_charge": 2,
+      "effect": {
+        "type": "damage_every_other_tick",
+        "damage_min": 2,
+        "damage_max": 6
+      },
+      "blurb": "Fires every other tick from placement. Won't spin up without breathing room.",
+      "form_number": "DL-11"
+    },
+    {
+      "id": "capacitor_mine",
+      "name": "Capacitor Mine",
+      "category": "damage",
+      "cost": 60,
+      "min_charge": 4,
+      "max_charge": "uncapped",
+      "soft_max": 4,
+      "effect": {
+        "type": "damage_on_tick_8",
+        "damage_min": 0,
+        "damage_max": 30
+      },
+      "blurb": "Detonates on tick 8. Needs four empty ticks behind to arm. Past that, charge stacks indefinitely. Glass cannon.",
+      "form_number": "CM-93"
+    },
+    {
+      "id": "void_battery",
+      "name": "Void Battery",
+      "category": "damage",
+      "cost": 120,
+      "min_charge": 0,
+      "max_charge": 2,
+      "effect": {
+        "type": "damage_twice_placement_and_eight",
+        "damage_min": 3,
+        "damage_max": 9
+      },
+      "blurb": "Fires on placement tick and again on tick 8. Two bites, modest ceiling.",
+      "form_number": "VB-22"
+    },
+    {
+      "id": "shroud_plate",
+      "name": "Shroud Plate",
+      "category": "defense",
+      "cost": 30,
+      "min_charge": 0,
+      "max_charge": 2,
+      "effect": {
+        "type": "passive_lane_integrity",
+        "bonus_min": 5,
+        "bonus_max": 15
+      },
+      "blurb": "Pre-combat: adds integrity to this lane. Charges expand the upper bound of the bonus roll.",
+      "form_number": "SP-07"
+    },
+    {
+      "id": "reflector_coil",
+      "name": "Reflector Coil",
+      "category": "defense",
+      "cost": 80,
+      "min_charge": 1,
+      "max_charge": 3,
+      "effect": {
+        "type": "reflect_lane_damage",
+        "reflect_pct_min": 15,
+        "reflect_pct_max": 40
+      },
+      "blurb": "Reflects incoming lane damage as a percentage. Needs spin-up. Full charge mirrors hardest.",
+      "form_number": "RC-19"
+    },
+    {
+      "id": "static_cage",
+      "name": "Static Cage",
+      "category": "defense",
+      "cost": 50,
+      "min_charge": 2,
+      "max_charge": 2,
+      "effect": {
+        "type": "block_enemy_first_item_on_lane"
+      },
+      "blurb": "Suppresses the enemy lane's first firing item. Binary — needs the warmup, no overcharge bonus.",
+      "form_number": "SC-31"
+    },
+    {
+      "id": "aegis_loop",
+      "name": "Aegis Loop",
+      "category": "defense",
+      "cost": 100,
+      "min_charge": 3,
+      "max_charge": 3,
+      "effect": {
+        "type": "prevent_lane_collapse",
+        "uses_per_round": 1
+      },
+      "blurb": "Prevents this lane from collapsing once per round. Expensive, charge-hungry, ironclad.",
+      "form_number": "AL-02"
+    },
+    {
+      "id": "drift_tap",
+      "name": "Drift Tap",
+      "category": "utility",
+      "cost": 60,
+      "min_charge": 0,
+      "max_charge": 4,
+      "effect": {
+        "type": "lane_damage_multiplier",
+        "per_charge_bonus": 0.10
+      },
+      "blurb": "Adds +10% damage per charge to every other item on this lane. Synergy piece, no direct damage.",
+      "form_number": "DT-44"
+    },
+    {
+      "id": "phase_step",
+      "name": "Phase Step",
+      "category": "utility",
+      "cost": 40,
+      "min_charge": 0,
+      "max_charge": 0,
+      "effect": {
+        "type": "hide_lane_from_ghost"
+      },
+      "blurb": "Items on this lane don't appear in your ghost layout when you die. Burn a slot to hide your tech.",
+      "form_number": "PS-66"
+    },
+    {
+      "id": "cascade",
+      "name": "Cascade",
+      "category": "utility",
+      "cost": 90,
+      "min_charge": 2,
+      "max_charge": 3,
+      "effect": {
+        "type": "copy_damage_to_adjacent_lanes",
+        "copy_pct_at_min": 50,
+        "copy_pct_at_max": 100
+      },
+      "blurb": "Copies this lane's damage to adjacent lanes. Half at min charge, full at max.",
+      "form_number": "CD-58"
+    },
+    {
+      "id": "keyword_forge",
+      "name": "Keyword Forge",
+      "category": "utility",
+      "cost": 50,
+      "min_charge": 0,
+      "max_charge": 0,
+      "effect": {
+        "type": "drift_burst_on_tick_4",
+        "drift_multiplier": 10
+      },
+      "blurb": "On tick 4, adds (drift_score × 10) damage to this lane. Converts spicy queries into direct hurt.",
+      "form_number": "KF-17"
+    },
+    {
+      "id": "drain_pole",
+      "name": "Drain Pole",
+      "category": "shifter",
+      "cost": 70,
+      "min_charge": 0,
+      "max_charge": 3,
+      "effect": {
+        "type": "consume_forward_double_charges"
+      },
+      "blurb": "Consumes the item one tick ahead (it doesn't fire) and doubles your own effective charges. Cannibal.",
+      "form_number": "DP-08"
+    },
+    {
+      "id": "echo_capacitor",
+      "name": "Echo Capacitor",
+      "category": "shifter",
+      "cost": 80,
+      "min_charge": 1,
+      "max_charge": "uncapped",
+      "soft_max": 3,
+      "effect": {
+        "type": "double_empty_ticks_behind_for_lane",
+        "multiplier_base": 2.0,
+        "multiplier_per_overflow": 0.5
+      },
+      "blurb": "Empty ticks behind on this lane count 2× toward charge for other items. Each charge past 3 adds +0.5× more.",
+      "form_number": "EC-91"
+    },
+    {
+      "id": "inversion_plate",
+      "name": "Inversion Plate",
+      "category": "shifter",
+      "cost": 100,
+      "min_charge": 0,
+      "max_charge": 3,
+      "effect": {
+        "type": "count_empty_ticks_ahead_for_lane"
+      },
+      "blurb": "Empty ticks ahead on this lane also count toward charge for other items. Front-load builds.",
+      "form_number": "IP-36"
+    },
+    {
+      "id": "sink",
+      "name": "Sink",
+      "category": "shifter",
+      "cost": 30,
+      "min_charge": 0,
+      "max_charge": 0,
+      "effect": {
+        "type": "reduce_enemy_charge_same_column",
+        "charge_penalty": 1
+      },
+      "blurb": "Doesn't fire. Enemy items in the same tick column lose 1 charge. Anti-overclock tech.",
+      "form_number": "SK-00"
+    }
+  ]
+}
+;
+// ====== END INLINED CATALOG ======
+
+
+// ============================================================================
+// LOAD CATALOG
+// ============================================================================
+let CATALOG = null;
+let ITEMS_BY_ID = {};
+
+function loadCatalog() {
+  CATALOG = INLINED_CATALOG;
+  for (const it of CATALOG.items) ITEMS_BY_ID[it.id] = it;
+}
+
+// ============================================================================
+// STATE
+// ============================================================================
+const STATE = {
+  player_board: [],   // [{item_id, lane, tick}, ...]
+  ghost_board: [],
+  ghost_source: 'synthetic_aggressive',
+  currency: 200,
+  drift: 0.50,
+  round: 1,
+  seed: '',
+  selected_item: null,
+  is_simulating: false,
+  last_result: null,
+
+  // --- new ---
+  mode: 'progress',         // 'progress' | 'test' | 'bureau'
+  upgrade_level: 0,         // lane plating reinforcement count
+  phantom_pool: 100,        // persists across rounds in progress mode
+  run_terminated: false,    // true after a round 4+ death
+
+  // --- bureau mode ---
+  bureau: {
+    url: '',
+    anon_key: '',
+    code: '',               // last typed/validated TRN code
+    code_validated: false,
+    code_info: null,        // last peek response: {balance, tier, hidden, expires_at, ...}
+    run_id: null,           // active server-issued run id (set after start_run)
+    use_terminated_pool: false,
+  },
+};
+
+// ============================================================================
+// BUREAU CONNECTION (drift) — small REST client, anon key only
+// ----------------------------------------------------------------------------
+// All Bureau-mode chatter with drift goes through here. The endpoints invoked
+// are anon-callable RPCs from trench.sql (peek_code, start_run, complete_run,
+// pull_ghost). Service-role keys must NEVER be entered here — service role
+// belongs only in the operator console + Acurast verifier.
+// ============================================================================
+const BUREAU_LS_KEY = 'tt_bureau_conn';
+function loadBureauSettings() {
+  try {
+    const raw = localStorage.getItem(BUREAU_LS_KEY);
+    if (!raw) return;
+    const obj = JSON.parse(raw);
+    STATE.bureau.url      = obj.url      || '';
+    STATE.bureau.anon_key = obj.anon_key || '';
+  } catch (e) { /* ignore */ }
+}
+function saveBureauSettings() {
+  try {
+    localStorage.setItem(BUREAU_LS_KEY, JSON.stringify({
+      url: STATE.bureau.url,
+      anon_key: STATE.bureau.anon_key,
+    }));
+  } catch (e) { /* ignore */ }
+}
+function bureauReady() {
+  return !!(STATE.bureau.url && STATE.bureau.anon_key);
+}
+async function bureauRpc(name, body) {
+  if (!bureauReady()) throw new Error('bureau not configured');
+  const url = STATE.bureau.url.replace(/\/$/, '') + '/rest/v1/rpc/' + name;
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'apikey': STATE.bureau.anon_key,
+      'Authorization': 'Bearer ' + STATE.bureau.anon_key,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    },
+    body: JSON.stringify(body || {}),
+  });
+  let txt;
+  try { txt = await r.text(); } catch (e) { txt = ''; }
+  if (!r.ok) {
+    throw new Error('HTTP ' + r.status + (txt ? ': ' + txt.slice(0, 200) : ''));
+  }
+  if (!txt) return null;
+  try { return JSON.parse(txt); } catch (e) { return txt; }
+}
+
+// REST root probe — just authenticates and verifies the URL.
+async function bureauPing() {
+  if (!bureauReady()) throw new Error('bureau not configured');
+  const url = STATE.bureau.url.replace(/\/$/, '') + '/rest/v1/';
+  const r = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'apikey': STATE.bureau.anon_key,
+      'Authorization': 'Bearer ' + STATE.bureau.anon_key,
+    },
+  });
+  if (r.status === 401 || r.status === 403) throw new Error('auth ' + r.status + ' (bad anon key?)');
+  if (r.status >= 200 && r.status < 500) return true;
+  throw new Error('HTTP ' + r.status);
+}
+
+// Mode-specific defaults
+const STARTING_CURRENCY = { progress: 50, test: 500 };
+const BASE_LANE_INTEG = 30;
+const INTEG_PER_UPGRADE = 5;
+const INCOME_PER_UPGRADE = 3;
+
+// Upgrade cost curve: 80 * 2^level (80, 160, 320, 640, 1280, ...)
+function upgradeCost(level) {
+  return 80 * Math.pow(2, level);
+}
+
+// Per-round income formula (progress mode).
+// Base: round_number * 8 + 15. Plus per-upgrade bonus. Plus combat result bonuses.
+function baseIncomeForRound(round, upgrade) {
+  return Math.floor(round * 8 + 15 + upgrade * INCOME_PER_UPGRADE);
+}
+
+function currentLaneInteg(upgrade) {
+  return BASE_LANE_INTEG + upgrade * INTEG_PER_UPGRADE;
+}
+
+// ============================================================================
+// SYNTHETIC GHOST LIBRARY
+// Hand-authored layouts for the practice mode. These mirror what would
+// eventually be the operator-seeded trench_synthetic_ghosts table.
+// ============================================================================
+const SYNTHETIC_GHOSTS = {
+  synthetic_aggressive: {
+    label: 'Aggressive / Round 3',
+    board: [
+      { item_id: 'matrix_bolt',  lane: 1, tick: 4 },
+      { item_id: 'matrix_bolt',  lane: 2, tick: 4 },
+      { item_id: 'void_battery', lane: 3, tick: 1 },
+      { item_id: 'drift_lance',  lane: 4, tick: 3 },
+    ],
+  },
+  synthetic_capacitor: {
+    label: 'Capacitor Mine / Round 5',
+    board: [
+      { item_id: 'capacitor_mine', lane: 1, tick: 8 },
+      { item_id: 'shroud_plate',   lane: 2, tick: 1 },
+      { item_id: 'matrix_bolt',    lane: 3, tick: 6 },
+      { item_id: 'reflector_coil', lane: 4, tick: 5 },
+    ],
+  },
+  synthetic_defensive: {
+    label: 'Defensive / Round 4',
+    board: [
+      { item_id: 'shroud_plate',   lane: 1, tick: 1 },
+      { item_id: 'shroud_plate',   lane: 2, tick: 1 },
+      { item_id: 'aegis_loop',     lane: 3, tick: 5 },
+      { item_id: 'reflector_coil', lane: 4, tick: 3 },
+      { item_id: 'drift_lance',    lane: 1, tick: 5 },
+      { item_id: 'matrix_bolt',    lane: 2, tick: 6 },
+    ],
+  },
+  synthetic_balanced: {
+    label: 'Balanced / Round 2',
+    board: [
+      { item_id: 'matrix_bolt',   lane: 1, tick: 4 },
+      { item_id: 'shroud_plate',  lane: 2, tick: 1 },
+      { item_id: 'drift_lance',   lane: 3, tick: 3 },
+      { item_id: 'void_battery',  lane: 4, tick: 1 },
+    ],
+  },
+  synthetic_late_game: {
+    label: 'Late Game / Round 7',
+    board: [
+      { item_id: 'capacitor_mine', lane: 1, tick: 8 },
+      { item_id: 'echo_capacitor', lane: 1, tick: 3 },
+      { item_id: 'void_battery',   lane: 2, tick: 1 },
+      { item_id: 'drift_tap',      lane: 2, tick: 4 },
+      { item_id: 'aegis_loop',     lane: 3, tick: 5 },
+      { item_id: 'matrix_bolt',    lane: 3, tick: 8 },
+      { item_id: 'reflector_coil', lane: 4, tick: 5 },
+      { item_id: 'sink',           lane: 4, tick: 7 },
+    ],
+  },
+  empty: { label: 'Empty', board: [] },
+};
+
+// ============================================================================
+// SEED HELPERS
+// ============================================================================
+function randomSeedHex() {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+// ============================================================================
+// RENDER: shop list
+// ============================================================================
+function renderShop() {
+  const list = document.getElementById('shop-list');
+  list.innerHTML = '';
+  for (const item of CATALOG.items) {
+    const el = document.createElement('div');
+    el.className = 'shop-item' +
+      (STATE.selected_item === item.id ? ' selected' : '') +
+      (item.cost > STATE.currency ? ' unaffordable' : '');
+    el.innerHTML = `
+      <div class="si-cat">${item.category}</div>
+      <div class="si-head">
+        <div class="si-name">${item.name}</div>
+        <div class="si-cost">${item.cost}G</div>
+      </div>
+      <div class="si-stats">
+        min ${item.min_charge} / max ${item.max_charge}
+        ${item.effect.damage_min !== undefined ? `· dmg ${item.effect.damage_min}–${item.effect.damage_max}` : ''}
+        · ${item.form_number}
+      </div>
+    `;
+    el.onclick = () => {
+      if (item.cost > STATE.currency && !boardHas(item.id)) return;
+      STATE.selected_item = STATE.selected_item === item.id ? null : item.id;
+      renderShop();
+      renderSelectedInfo();
+    };
+    list.appendChild(el);
+  }
+}
+
+function boardHas(itemId) {
+  return STATE.player_board.some((p) => p.item_id === itemId);
+}
+
+function renderSelectedInfo() {
+  const el = document.getElementById('selected-info');
+  if (!STATE.selected_item) {
+    el.innerHTML = `
+      <div class="si-title">— SELECT AN ITEM —</div>
+      <div class="si-blurb">Click an item below, then click a cell in your ledger to place. Click an occupied cell to remove and refund.</div>
+    `;
+    return;
+  }
+  const item = ITEMS_BY_ID[STATE.selected_item];
+  el.innerHTML = `
+    <div class="si-title">${item.name} <span style="font-size:10px;color:var(--ink-light);float:right">${item.form_number}</span></div>
+    <div style="margin:4px 0;font-size:10px"><strong>${item.cost}G</strong> · ${item.category} · charge ${item.min_charge}–${item.max_charge}</div>
+    <div class="si-blurb">${item.blurb}</div>
+  `;
+}
+
+// ============================================================================
+// RENDER: grids
+// ============================================================================
+function renderGrid(rootId, board, readOnly) {
+  const root = document.getElementById(rootId);
+  root.innerHTML = '';
+
+  // Top-left corner
+  root.appendChild(makeCell('corner'));
+  // Top row: tick labels
+  for (let t = 1; t <= 8; t++) {
+    const c = makeCell('tick-label');
+    c.textContent = 'T' + t;
+    root.appendChild(c);
+  }
+  // 4 lanes
+  for (let lane = 1; lane <= 4; lane++) {
+    const lab = makeCell('lane-label');
+    lab.textContent = 'L' + lane;
+    root.appendChild(lab);
+    for (let tick = 1; tick <= 8; tick++) {
+      const placement = board.find((p) => p.lane === lane && p.tick === tick);
+      const c = document.createElement('div');
+      c.className = 'cell' + (placement ? ' has-item' : '') + (readOnly ? ' read-only' : '');
+      c.dataset.lane = lane;
+      c.dataset.tick = tick;
+      if (placement) {
+        const it = ITEMS_BY_ID[placement.item_id];
+        c.innerHTML = `<div class="cell-name">${shortName(it.name)}</div><div class="cell-form">${it.form_number}</div>`;
+      }
+      if (!readOnly) {
+        c.onclick = () => onCellClick(lane, tick);
+      }
+      root.appendChild(c);
+    }
+  }
+}
+function makeCell(cls) {
+  const el = document.createElement('div');
+  el.className = cls;
+  return el;
+}
+function shortName(name) {
+  // Abbreviate to fit cell
+  const w = name.split(' ');
+  if (w.length === 1) return name.toUpperCase().slice(0, 8);
+  return w.map((x) => x[0].toUpperCase()).join('') + '·' + w[w.length - 1].slice(0, 4).toUpperCase();
+}
+
+// ============================================================================
+// RENDER: integrity bars
+// ============================================================================
+function renderIntegrity(rootId, integrity, collapsed) {
+  const root = document.getElementById(rootId);
+  root.innerHTML = '';
+  const lab = document.createElement('div');
+  lab.className = 'integrity-label';
+  lab.textContent = 'INTEG';
+  root.appendChild(lab);
+  for (let lane = 1; lane <= 4; lane++) {
+    const bar = document.createElement('div');
+    bar.className = 'integrity-bar';
+    const fill = document.createElement('div');
+    fill.className = 'integrity-bar-fill' + (collapsed.includes(lane) ? ' lane-collapsed' : '');
+    const max = 45; // 30 base + up to 15 from shroud, rough viz cap
+    fill.style.width = Math.min(100, (integrity[lane - 1] / max) * 100) + '%';
+    bar.appendChild(fill);
+    const span = document.createElement('span');
+    span.textContent = collapsed.includes(lane) ? 'X' : integrity[lane - 1];
+    bar.appendChild(span);
+    root.appendChild(bar);
+  }
+}
+
+// ============================================================================
+// PLACE / REMOVE LOGIC
+// ============================================================================
+function onCellClick(lane, tick) {
+  if (STATE.is_simulating) return;
+  const existing = STATE.player_board.find((p) => p.lane === lane && p.tick === tick);
+  if (existing) {
+    // Remove + refund
+    STATE.currency += ITEMS_BY_ID[existing.item_id].cost;
+    STATE.player_board = STATE.player_board.filter((p) => !(p.lane === lane && p.tick === tick));
+    appendLog('system', `&gt; removed ${ITEMS_BY_ID[existing.item_id].name} from L${lane}/T${tick}, refunded ${ITEMS_BY_ID[existing.item_id].cost}G`);
+  } else if (STATE.selected_item) {
+    const item = ITEMS_BY_ID[STATE.selected_item];
+    if (item.cost > STATE.currency) {
+      appendLog('fatal', `&gt; INSUFFICIENT FUNDS // need ${item.cost}G, have ${STATE.currency}G`);
+      return;
+    }
+    STATE.player_board.push({ item_id: STATE.selected_item, lane, tick });
+    STATE.currency -= item.cost;
+    appendLog('system', `&gt; placed ${item.name} at L${lane}/T${tick} (-${item.cost}G)`);
+  } else {
+    appendLog('system', '&gt; select an item from the catalog first.');
+    return;
+  }
+  redrawPlayer();
+  renderShop();
+  renderSelectedInfo();
+  updateMeta();
+}
+
+function redrawPlayer() {
+  renderGrid('player-grid', STATE.player_board, false);
+  renderIntegrity('player-integrity', [30, 30, 30, 30], []);
+}
+function redrawGhost() {
+  renderGrid('ghost-grid', STATE.ghost_board, true);
+  renderIntegrity('ghost-integrity', [30, 30, 30, 30], []);
+}
+
+function updateMeta() {
+  document.getElementById('currency').textContent = STATE.currency;
+  document.getElementById('player-pool').textContent = STATE.phantom_pool;
+  document.getElementById('player-lanes').textContent = '4';
+  document.getElementById('ghost-pool').textContent = '100';
+  document.getElementById('ghost-lanes').textContent = '4';
+  document.getElementById('round-display').textContent = STATE.round;
+
+  // Re-render player integrity bars at upgraded value
+  const li = currentLaneInteg(STATE.upgrade_level);
+  renderIntegrity('player-integrity', [li, li, li, li], []);
+
+  // Progress status line
+  const status = document.getElementById('progress-status');
+  if (STATE.mode === 'progress') {
+    if (STATE.run_terminated) {
+      status.textContent = 'RUN TERMINATED // press NEW RUN';
+      status.style.color = 'var(--stamp-red)';
+    } else {
+      status.textContent = `run active // ph.pool ${STATE.phantom_pool}/100`;
+      status.style.color = 'var(--ink-faded)';
+    }
+  } else {
+    status.textContent = 'test mode // currency refilled per submit';
+    status.style.color = 'var(--ink-faded)';
+  }
+
+  updateUpgradeUI();
+}
+
+function updateUpgradeUI() {
+  const lvl = STATE.upgrade_level;
+  const cost = upgradeCost(lvl);
+  const integ = currentLaneInteg(lvl);
+  const income = lvl * INCOME_PER_UPGRADE;
+  document.getElementById('upgrade-level').textContent = lvl;
+  document.getElementById('upgrade-integ').textContent = integ;
+  document.getElementById('upgrade-income').textContent = '+' + income;
+  document.getElementById('upgrade-cost').textContent = cost;
+  const btn = document.getElementById('upgrade-btn');
+  btn.disabled = STATE.is_simulating || STATE.run_terminated || STATE.currency < cost;
+}
+
+// ============================================================================
+// SIMULATION + ANIMATED PLAYBACK
+// ============================================================================
+async function runSimulation() {
+  if (STATE.is_simulating) return;
+  if (STATE.run_terminated) {
+    appendLog('fatal', '&gt; RUN TERMINATED. PRESS NEW RUN.');
+    return;
+  }
+
+  // BUREAU MODE: must have a configured connection and a validated TRN code.
+  // Server may also issue a seed and override the ghost board (terminated pool).
+  if (STATE.mode === 'bureau') {
+    if (!bureauReady()) {
+      appendLog('fatal', '&gt; BUREAU: no drift connection configured. open BUREAU CONNECTION SETTINGS.');
+      return;
+    }
+    if (!STATE.bureau.code_validated || !STATE.bureau.code) {
+      appendLog('fatal', '&gt; BUREAU: no validated TRN code. enter a code and CHECK first.');
+      return;
+    }
+  }
+
+  STATE.is_simulating = true;
+  document.getElementById('submit-btn').disabled = true;
+  document.getElementById('clear-btn').disabled = true;
+  document.getElementById('reset-btn').disabled = true;
+  document.getElementById('upgrade-btn').disabled = true;
+
+  // Optional: pull opposition from terminated pool (bureau mode only)
+  if (STATE.mode === 'bureau' && STATE.bureau.use_terminated_pool) {
+    appendLog('system', '&gt;&gt; PROBING TERMINATED POOL...');
+    try {
+      const pool = await bureauRpc('trench_pull_ghost', { p_round: STATE.round });
+      if (pool && pool.ok && Array.isArray(pool.board) && pool.board.length > 0) {
+        STATE.ghost_board = pool.board.map((p) => ({ ...p }));
+        STATE.ghost_source = pool.ghost_source || ('pool:r' + (pool.round_number || STATE.round));
+        appendLog('system', '&gt;&gt; OPPOSITION FROM POOL :: ' + STATE.ghost_source);
+      } else {
+        appendLog('system', '&gt;&gt; POOL EMPTY \u2014 USING SYNTHETIC');
+      }
+    } catch (e) {
+      appendLog('system', '&gt;&gt; POOL PULL FAILED: ' + e.message + ' \u2014 USING SYNTHETIC');
+    }
+  }
+
+  // Bureau: server-issued run + seed (replaces local seed for verifiability)
+  let seed = STATE.seed || randomSeedHex();
+  if (STATE.mode === 'bureau') {
+    appendLog('system', '&gt;&gt; LODGING SUBMISSION WITH BUREAU...');
+    try {
+      const laneIntegPre = currentLaneInteg(STATE.upgrade_level);
+      const startRes = await bureauRpc('trench_start_run', {
+        p_code:          STATE.bureau.code,
+        p_round:         STATE.round,
+        p_drift_score:   Math.round(STATE.drift * 1000) / 1000,
+        p_player_board:  STATE.player_board,
+        p_ghost_board:   STATE.ghost_board,
+        p_ghost_source:  STATE.ghost_source,
+        p_player_state:  {
+          phantom_pool: STATE.phantom_pool,
+          lane_integrity: [laneIntegPre, laneIntegPre, laneIntegPre, laneIntegPre],
+        },
+        p_user_agent:    (navigator.userAgent || '').slice(0, 180),
+      });
+      if (!startRes || !startRes.ok) {
+        const err = (startRes && startRes.error) || 'unknown';
+        const det = (startRes && startRes.detail) ? ' \u2014 ' + startRes.detail : '';
+        appendLog('fatal', '&gt; BUREAU REJECTED SUBMISSION: ' + err + det);
+        finishSimulation();
+        return;
+      }
+      seed = startRes.seed;                      // server seed wins
+      STATE.bureau.run_id = startRes.run_id;
+      appendLog('system', '&gt;&gt; BUREAU ACCEPTED // RUN ' + (startRes.run_id || '').slice(0, 8) + '\u2026 // SEED ' + seed.slice(0, 12) + '\u2026');
+      if (typeof startRes.balance_before === 'number') {
+        appendLog('system', '&gt;&gt; CODE BALANCE BEFORE: ' + startRes.balance_before);
+      }
+    } catch (e) {
+      appendLog('fatal', '&gt; BUREAU UNREACHABLE: ' + e.message);
+      finishSimulation();
+      return;
+    }
+  }
+
+  STATE.seed = seed;
+  document.getElementById('seed-display').textContent = seed.slice(0, 12) + '…';
+
+  appendLog('system', '&gt;&gt; SUBMISSION LOCKED. SEED ' + seed.slice(0, 12) + '…');
+  appendLog('system', '&gt;&gt; DRIFT ' + STATE.drift.toFixed(2) + ' // ROUND ' + STATE.round + ' // PLATING LV' + STATE.upgrade_level);
+  appendLog('system', '&gt;&gt; OPPOSITION ASSIGNMENT IN PROGRESS...');
+
+  // PHASE 1: Processing overlay (artificial delay)
+  const overlay = document.getElementById('processing-overlay');
+  const procDetail = document.getElementById('proc-detail');
+  overlay.classList.add('active');
+  const procMessages = [
+    '// SUBMISSION LOCKED // AWAITING BUREAU RESOLUTION //',
+    '// TOLL SCRAPE QUEUED //',
+    '// FETCHING OPPOSITION FROM TERMINATED POOL //',
+    '// COMBAT MATH PENDING //',
+  ];
+  let msgIdx = 0;
+  const msgInterval = setInterval(() => {
+    msgIdx = (msgIdx + 1) % procMessages.length;
+    procDetail.textContent = procMessages[msgIdx];
+  }, 450);
+  await sleep(1700);
+  clearInterval(msgInterval);
+  overlay.classList.remove('active');
+
+  // PHASE 2: Run the simulation
+  const laneInteg = currentLaneInteg(STATE.upgrade_level);
+  let result;
+  try {
+    result = simulate({
+      player_board: STATE.player_board,
+      ghost_board: STATE.ghost_board,
+      drift_score: STATE.drift,
+      seed: seed,
+      round_number: STATE.round,
+      items_catalog: ITEMS_BY_ID,
+      player_starting_state: {
+        phantom_pool: STATE.phantom_pool,
+        lane_integrity: [laneInteg, laneInteg, laneInteg, laneInteg],
+      },
+      // ghost uses defaults (100 / 30s) — no upgrades on synthetic ghosts
+    });
+  } catch (e) {
+    appendLog('fatal', '&gt; ENGINE ERROR: ' + e.message);
+    finishSimulation();
+    return;
+  }
+  STATE.last_result = result;
+
+  // PHASE 3: Declassify the ghost board.
+  appendLog('system', '&gt;&gt; OPPOSITION DECLASSIFIED');
+  await revealGhost();
+
+  appendLog('system', '&gt;&gt; SOURCE: ' + SYNTHETIC_GHOSTS[STATE.ghost_source].label.toUpperCase());
+  appendLog('system', '&gt;&gt; MAX_CHARGE MOD: ' + (result.max_charge_modifier >= 0 ? '+' : '') + result.max_charge_modifier);
+
+  // PHASE 4: Set up tick visualization panel
+  const vizPanel = document.getElementById('tick-viz-panel');
+  const viz = document.getElementById('tick-viz');
+  viz.innerHTML = '';
+  vizPanel.style.display = 'block';
+
+  // PHASE 5: Group events by tick + actor, then play tick-by-tick
+  //   Order WITHIN a tick: operator events first, then opponent events.
+  //   Quiet sides are shown as "— quiet —".
+  const eventsByTick = groupEventsByTick(result.tick_log);
+  const playerState = {
+    phantom_pool: STATE.phantom_pool,
+    lane_integrity: [laneInteg, laneInteg, laneInteg, laneInteg],
+    lanes_collapsed: [],
+  };
+  const ghostState = {
+    phantom_pool: 100,
+    lane_integrity: [30, 30, 30, 30],
+    lanes_collapsed: [],
+  };
+
+  // Pre-combat events (passives) apply immediately, not as a tick
+  const preCombatEvents = (eventsByTick.get(0) || []);
+  for (const ev of preCombatEvents) {
+    renderTickEvent(ev, playerState, ghostState);
+  }
+
+  // Combat ticks 1..8
+  for (let tick = 1; tick <= 8; tick++) {
+    const tickEvents = eventsByTick.get(tick) || [];
+    if (tickEvents.length === 0) continue;  // skip entirely silent ticks
+
+    const playerEvents = tickEvents.filter((e) => e.actor === 'player');
+    const ghostEvents  = tickEvents.filter((e) => e.actor === 'ghost');
+    const sysEvents    = tickEvents.filter((e) => !e.actor); // e.g. unattributed system events
+
+    // Add the tick row to the viz panel BEFORE playing events
+    const tickRow = createTickRow(tick, playerEvents, ghostEvents);
+    viz.appendChild(tickRow);
+    viz.scrollTop = viz.scrollHeight;
+
+    // Play operator events (with quick spacing)
+    for (const ev of playerEvents) {
+      renderTickEvent(ev, playerState, ghostState);
+      await sleep(160);
+    }
+    if (playerEvents.length > 0) await sleep(140); // beat between sides
+
+    // Play opponent events
+    for (const ev of ghostEvents) {
+      renderTickEvent(ev, playerState, ghostState);
+      await sleep(160);
+    }
+    for (const ev of sysEvents) renderTickEvent(ev, playerState, ghostState);
+
+    // Total tick budget ~800ms. Pad to that.
+    const usedMs = (playerEvents.length + ghostEvents.length) * 160 + (playerEvents.length > 0 ? 140 : 0);
+    const pad = Math.max(120, 800 - usedMs);
+    await sleep(pad);
+  }
+
+  // PHASE 6: Result banner.
+  await sleep(400);
+  renderResultBanner(result);
+
+  // PHASE 6b: Bureau commit — only after the animation completes, so we know
+  // exactly what to send. Damage summary is computed from the tick_log.
+  if (STATE.mode === 'bureau' && STATE.bureau.run_id) {
+    try {
+      const summary = summarizeDamage(result);
+      // Server "terminated" matches client run_terminated rule: died in R4+.
+      const willTerminate = (result.final_state && result.final_state.player &&
+                             result.final_state.player.phantom_pool <= 0 &&
+                             STATE.round >= 4);
+      const completeRes = await bureauRpc('trench_complete_run', {
+        p_run_id:         STATE.bureau.run_id,
+        p_winner:         result.winner,
+        p_final_state:    result.final_state,
+        p_damage_summary: summary,
+        p_terminated:     willTerminate,
+        p_engine_version: result.engine_version || ENGINE_VERSION,
+      });
+      if (completeRes && completeRes.ok) {
+        const tail = (completeRes.added_to_pool ? ' // board recorded into terminated pool' : '');
+        appendLog('system', '&gt;&gt; BUREAU LODGED RESULT \u2014 balance after: ' + (completeRes.balance_after ?? '?') + tail);
+        document.getElementById('bureau-last-result').textContent =
+          'run ' + STATE.bureau.run_id.slice(0, 8) + ' lodged \u2014 ' + result.winner + (completeRes.added_to_pool ? ' // pool +1' : '');
+        // Code is consumed by the bureau; invalidate locally so the operator
+        // has to re-validate (or enter a new code) before another submission.
+        STATE.bureau.code_validated = false;
+        STATE.bureau.code_info = (STATE.bureau.code_info ? { ...STATE.bureau.code_info, balance: completeRes.balance_after } : null);
+        refreshBureauUI();
+      } else {
+        const err = (completeRes && completeRes.error) || 'unknown';
+        appendLog('fatal', '&gt; BUREAU COMMIT FAILED: ' + err + ' \u2014 run lodged locally only');
+      }
+    } catch (e) {
+      appendLog('fatal', '&gt; BUREAU COMMIT NETWORK ERROR: ' + e.message + ' \u2014 try resubmitting later');
+    } finally {
+      STATE.bureau.run_id = null;
+    }
+  }
+
+  // PHASE 7: Update progress-mode state (persist HP, advance round, give income)
+  applyResultToRun(result);
+
+  finishSimulation();
+}
+
+// Build a small {player_dealt, ghost_dealt, ticks_played} object from the tick log.
+function summarizeDamage(result) {
+  let pDealt = 0, gDealt = 0, lastTick = 0;
+  for (const ev of (result.tick_log || [])) {
+    if (typeof ev.tick === 'number' && ev.tick > lastTick) lastTick = ev.tick;
+    if (ev.event === 'fire') {
+      if (ev.actor === 'player') pDealt += ev.damage_dealt || 0;
+      else if (ev.actor === 'ghost') gDealt += ev.damage_dealt || 0;
+    } else if (ev.event === 'reflect_back') {
+      // reflect_back's actor is the side ATTACKED — credit damage to defender
+      if (ev.actor === 'player') pDealt += ev.damage || 0;
+      else if (ev.actor === 'ghost') gDealt += ev.damage || 0;
+    }
+  }
+  return {
+    player_dealt: pDealt,
+    ghost_dealt: gDealt,
+    ticks_played: lastTick,
+    log_event_count: (result.tick_log || []).length,
+  };
+}
+
+// Group the engine's flat tick_log into a Map<tick_number, events[]>.
+// Pre-combat events (passives, drain consumption) are bucketed under tick 0.
+function groupEventsByTick(tick_log) {
+  const m = new Map();
+  for (const ev of tick_log) {
+    const t = ev.tick !== undefined ? ev.tick : 0;
+    if (!m.has(t)) m.set(t, []);
+    m.get(t).push(ev);
+  }
+  return m;
+}
+
+// Build a visual row for the tick breakdown panel.
+function createTickRow(tick, playerEvents, ghostEvents) {
+  const row = document.createElement('div');
+  row.className = 'tick-row';
+
+  const num = document.createElement('div');
+  num.className = 'tick-num';
+  num.textContent = 'T' + tick;
+  row.appendChild(num);
+
+  // Find the max damage in this combat for relative bar scaling
+  const allDmgs = [...playerEvents, ...ghostEvents]
+    .filter((e) => e.event === 'fire' || e.event === 'reflect_back')
+    .map((e) => e.damage_dealt || e.damage || 0);
+  const maxDmg = Math.max(10, ...allDmgs);
+
+  const sides = [
+    { events: playerEvents, label: 'OPERATOR', cls: 'player' },
+    { events: ghostEvents,  label: 'OPPOSITION', cls: 'ghost' },
+  ];
+  for (const side of sides) {
+    const sideEl = document.createElement('div');
+    sideEl.className = 'tick-side ' + side.cls;
+    const labEl = document.createElement('div');
+    labEl.className = 'tick-side-label';
+    labEl.textContent = side.label;
+    sideEl.appendChild(labEl);
+
+    const fireEvents = side.events.filter((e) => e.event === 'fire' || e.event === 'reflect_back' || e.event === 'misfire' || e.event === 'static_cage_block' || e.event === 'aegis_loop_save');
+    if (fireEvents.length === 0) {
+      const q = document.createElement('div');
+      q.className = 'tick-event quiet';
+      q.textContent = '— quiet —';
+      sideEl.appendChild(q);
+    } else {
+      for (const ev of fireEvents) {
+        sideEl.appendChild(renderTickEventCard(ev, maxDmg));
+      }
+    }
+    row.appendChild(sideEl);
+  }
+  return row;
+}
+
+function renderTickEventCard(ev, maxDmg) {
+  const card = document.createElement('div');
+  card.className = 'tick-event';
+  if (ev.event === 'misfire') {
+    card.classList.add('misfire');
+    card.innerHTML = `
+      <span class="ev-item">${shortName(ITEMS_BY_ID[ev.item]?.name || ev.item)}</span>
+      <span class="ev-meta">L${ev.lane} misfire (ch ${ev.charges}&lt;${ev.min_required})</span>
+    `;
+    return card;
+  }
+  if (ev.event === 'static_cage_block') {
+    card.classList.add('blocked');
+    card.innerHTML = `
+      <span class="ev-item">CAGE</span>
+      <span class="ev-meta">L${ev.defender_lane} blocked ${ev.blocked_damage}</span>
+    `;
+    return card;
+  }
+  if (ev.event === 'aegis_loop_save') {
+    card.innerHTML = `
+      <span class="ev-item">AEGIS</span>
+      <span class="ev-meta">L${ev.lane} held</span>
+    `;
+    return card;
+  }
+  if (ev.event === 'reflect_back') {
+    const pct = Math.min(100, Math.round((ev.damage / maxDmg) * 100));
+    card.innerHTML = `
+      <span class="ev-item">REFL</span>
+      <span class="ev-meta">L${ev.target_lane}</span>
+      <span class="ev-bar"><span class="ev-bar-fill" style="width:${pct}%"></span></span>
+      <span class="ev-dmg">${ev.damage}</span>
+    `;
+    return card;
+  }
+  // fire event
+  const dmg = ev.damage_dealt || 0;
+  const pct = Math.min(100, Math.round((dmg / maxDmg) * 100));
+  if (ev.blocked) card.classList.add('blocked');
+  const item = ITEMS_BY_ID[ev.item];
+  card.innerHTML = `
+    <span class="ev-item">${shortName(item?.name || ev.item)}</span>
+    <span class="ev-meta">L${ev.lane}→L${ev.target_lane}${ev.via_cascade ? ' ✦' : ''} ch${ev.charges}</span>
+    <span class="ev-bar"><span class="ev-bar-fill" style="width:${pct}%"></span></span>
+    <span class="ev-dmg">${dmg}</span>
+  `;
+  return card;
+}
+
+async function revealGhost() {
+  const panel = document.getElementById('ghost-panel');
+  redrawGhost();
+  panel.classList.add('revealing');
+  await sleep(900);
+  panel.classList.remove('classified');
+  panel.classList.remove('revealing');
+}
+
+function finishSimulation() {
+  STATE.is_simulating = false;
+  document.getElementById('submit-btn').disabled = false;
+  document.getElementById('clear-btn').disabled = false;
+  document.getElementById('reset-btn').disabled = false;
+  updateUpgradeUI();  // upgrade button reflects current currency
+}
+
+// Apply the combat result to the persistent run state (progress mode).
+// Test mode: round and HP stay where the user set them.
+function applyResultToRun(result) {
+  const newPool = result.final_state.player.phantom_pool;
+
+  if (STATE.mode === 'test') {
+    // Test mode: HP and currency don't persist between submits.
+    // But always refill currency to TEST_CURRENCY to keep testing fluid.
+    STATE.phantom_pool = 100;
+    STATE.currency = Math.max(STATE.currency, STARTING_CURRENCY.test);
+    appendLog('system', '&gt;&gt; TEST MODE: state refreshed.');
+    updateMeta();
+    return;
+  }
+
+  // PROGRESS mode: persist HP, advance round, award income.
+  STATE.phantom_pool = newPool;
+
+  // Death check (round 4+)
+  if (newPool <= 0 && STATE.round >= 4) {
+    STATE.run_terminated = true;
+    appendLog('fatal', '&gt;&gt; ASSET TERMINATED AT ROUND ' + STATE.round);
+    appendLog('fatal', '&gt;&gt; PRX-' + STATE.seed.slice(0,4).toUpperCase() + '-' + STATE.seed.slice(4,8).toUpperCase() + ' RECYCLED INTO TRAINING SUBSTRATE');
+    appendLog('system', '&gt;&gt; press NEW RUN to start fresh.');
+    document.getElementById('submit-btn').disabled = true;
+    document.getElementById('upgrade-btn').disabled = true;
+    updateMeta();
+    return;
+  }
+
+  // Round 1-3: HP floors at 1 if hit zero
+  if (newPool <= 0 && STATE.round < 4) {
+    STATE.phantom_pool = 1;
+    appendLog('system', '&gt;&gt; CALIBRATION FLOOR: phantom pool restored to 1.');
+  }
+
+  // Award income
+  const base = baseIncomeForRound(STATE.round, STATE.upgrade_level);
+  let bonus = 0;
+  if (result.winner === 'player') bonus += 30;
+  const dmgTaken = (STATE.phantom_pool - newPool > 0) ? STATE.phantom_pool - newPool : (100 - newPool);
+  if (dmgTaken === 0 && result.winner === 'player') bonus += 20;
+  else if (dmgTaken < 30 && result.winner === 'player') bonus += 10;
+
+  const income = base + bonus;
+  STATE.currency += income;
+  appendLog('system', `&gt;&gt; INCOME: +${base} base${bonus > 0 ? ' / +' + bonus + ' bonus' : ''} = +${income}G`);
+
+  // Advance round
+  STATE.round += 1;
+  appendLog('system', '&gt;&gt; ADVANCE TO ROUND ' + STATE.round + (STATE.round >= 4 ? ' // THE TRENCH BEGINS' : ''));
+
+  // Reclassify ghost panel for next round
+  reclassifyGhost();
+  document.getElementById('result-banner').style.display = 'none';
+
+  // Pick a new ghost archetype roughly suited to the round (simple bucket)
+  STATE.ghost_source = pickGhostForRound(STATE.round);
+  STATE.ghost_board = SYNTHETIC_GHOSTS[STATE.ghost_source].board.map((p) => ({ ...p }));
+  document.getElementById('ghost-select').value = STATE.ghost_source;
+
+  updateMeta();
+}
+
+function pickGhostForRound(round) {
+  if (round <= 2) return 'synthetic_balanced';
+  if (round === 3) return 'synthetic_aggressive';
+  if (round === 4) return 'synthetic_defensive';
+  if (round === 5) return 'synthetic_capacitor';
+  return 'synthetic_late_game';
+}
+
+function renderTickEvent(ev, playerState, ghostState) {
+  // Update simulated state for live display
+  if (ev.event === 'shroud_plate') {
+    const st = ev.actor === 'player' ? playerState : ghostState;
+    st.lane_integrity[ev.lane - 1] = ev.lane_integrity_after;
+  } else if (ev.event === 'fire' || ev.event === 'reflect_back') {
+    // Reverse-engineer state from event fields
+    if (ev.player_phantom_pool !== undefined) playerState.phantom_pool = ev.player_phantom_pool;
+    if (ev.ghost_phantom_pool !== undefined) ghostState.phantom_pool = ev.ghost_phantom_pool;
+    if (ev.player_lane_integrity !== undefined) playerState.lane_integrity[ev.target_lane - 1] = ev.player_lane_integrity;
+    if (ev.ghost_lane_integrity !== undefined) ghostState.lane_integrity[ev.target_lane - 1] = ev.ghost_lane_integrity;
+  }
+
+  // Flash the firing cell
+  if (ev.event === 'fire' && !ev.via_cascade) {
+    const grid = ev.actor === 'player' ? 'player-grid' : 'ghost-grid';
+    const cells = document.querySelectorAll(`#${grid} .cell.has-item`);
+    cells.forEach((c) => {
+      if (c.dataset.lane == ev.lane && c.dataset.tick == ev.tick) {
+        c.classList.remove('fire-flash');
+        void c.offsetWidth; // reflow
+        c.classList.add('fire-flash');
+      }
+    });
+  }
+
+  // Log line
+  let line = '';
+  const tick = ev.tick !== undefined ? `T${ev.tick}` : 'PRE';
+  if (ev.event === 'shroud_plate') {
+    line = `[${tick}] ${ev.actor.toUpperCase()} :: shroud plate L${ev.lane} +${ev.bonus} integ → ${ev.lane_integrity_after}`;
+  } else if (ev.event === 'drain_pole_consumed') {
+    line = `[${tick}] ${ev.actor.toUpperCase()} :: drain pole L${ev.lane}/T${ev.tick} consumed ${ev.consumed.item}`;
+  } else if (ev.event === 'misfire') {
+    line = `[${tick}] ${ev.actor.toUpperCase()} :: ${ev.item} L${ev.lane} MISFIRE (charge ${ev.charges} < req ${ev.min_required})`;
+  } else if (ev.event === 'fire') {
+    const c = ev.via_cascade ? ' (cascade)' : '';
+    const blocked = ev.blocked ? ' [BLOCKED]' : '';
+    line = `[${tick}] ${ev.actor.toUpperCase()} :: ${ev.item} L${ev.lane}→L${ev.target_lane} ch${ev.charges} dmg ${ev.damage_dealt}${c}${blocked}`;
+  } else if (ev.event === 'static_cage_block') {
+    line = `[${tick}] ${ev.actor.toUpperCase()} :: STATIC CAGE absorbed ${ev.blocked_damage} on L${ev.defender_lane}`;
+  } else if (ev.event === 'aegis_loop_save') {
+    line = `[${tick}] ${ev.actor.toUpperCase()} :: AEGIS LOOP held L${ev.lane}`;
+  } else if (ev.event === 'reflect_back') {
+    line = `[${tick}] ${ev.actor.toUpperCase()} :: reflect ${ev.damage} → L${ev.target_lane}`;
+  } else {
+    line = `[${tick}] ${ev.event}`;
+  }
+  appendLog(ev.actor || 'system', line);
+
+  // Refresh integrity displays
+  renderIntegrity('player-integrity', playerState.lane_integrity, playerState.lanes_collapsed);
+  renderIntegrity('ghost-integrity', ghostState.lane_integrity, ghostState.lanes_collapsed);
+  document.getElementById('player-pool').textContent = playerState.phantom_pool;
+  document.getElementById('ghost-pool').textContent = ghostState.phantom_pool;
+}
+
+function renderResultBanner(result) {
+  const banner = document.getElementById('result-banner');
+  banner.style.display = 'block';
+  banner.className = 'panel result-banner';
+  if (result.winner === 'player') {
+    banner.classList.add('win');
+    banner.innerHTML = `OPPOSITION TERMINATED <span class="sub">PHANTOM POOL: ${result.final_state.ghost.phantom_pool} // RUN CONTINUES</span>`;
+  } else if (result.winner === 'ghost') {
+    banner.classList.add('loss');
+    if (STATE.round >= 4) {
+      banner.innerHTML = `ASSET TERMINATED <span class="sub">DESIGNATION RECYCLED INTO TRAINING SUBSTRATE</span>`;
+    } else {
+      banner.innerHTML = `ROUND LOST <span class="sub">CALIBRATION ROUND. RUN CONTINUES.</span>`;
+    }
+  } else {
+    banner.classList.add('draw');
+    banner.innerHTML = `STALEMATE <span class="sub">BOTH ASSETS REMAIN. THE BUREAU NOTES.</span>`;
+  }
+  appendLog('system', `&gt;&gt; RESULT: ${result.winner.toUpperCase()}`);
+  appendLog('system', `&gt;&gt; engine ${result.engine_version} // seed ${result.seed.slice(0, 16)}…`);
+}
+
+// ============================================================================
+// LOG
+// ============================================================================
+function appendLog(cls, html) {
+  const log = document.getElementById('log');
+  const line = document.createElement('div');
+  line.className = 'log-line ' + cls;
+  line.innerHTML = html;
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+}
+function clearLog() {
+  document.getElementById('log').innerHTML = '';
+}
+
+// ============================================================================
+// HELPERS
+// ============================================================================
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+// ============================================================================
+// CONTROLS
+// ============================================================================
+function bindControls() {
+  document.getElementById('drift-slider').oninput = (e) => {
+    STATE.drift = parseInt(e.target.value, 10) / 100;
+    document.getElementById('drift-display').textContent = STATE.drift.toFixed(2);
+  };
+
+  document.getElementById('round-slider').oninput = (e) => {
+    if (STATE.mode !== 'test') return;
+    STATE.round = parseInt(e.target.value, 10);
+    document.getElementById('round-display').textContent = STATE.round;
+    // Test mode: auto-pick ghost matching round bucket
+    STATE.ghost_source = pickGhostForRound(STATE.round);
+    STATE.ghost_board = SYNTHETIC_GHOSTS[STATE.ghost_source].board.map((p) => ({ ...p }));
+    document.getElementById('ghost-select').value = STATE.ghost_source;
+    reclassifyGhost();
+  };
+
+  // MODE TOGGLE
+  document.querySelectorAll('.mode-btn').forEach((btn) => {
+    btn.onclick = () => {
+      if (STATE.is_simulating) return;
+      const mode = btn.dataset.mode;
+      if (mode === STATE.mode) return;
+      switchMode(mode);
+    };
+  });
+
+  // UPGRADE
+  document.getElementById('upgrade-btn').onclick = () => {
+    if (STATE.is_simulating || STATE.run_terminated) return;
+    const cost = upgradeCost(STATE.upgrade_level);
+    if (STATE.currency < cost) return;
+    STATE.currency -= cost;
+    STATE.upgrade_level += 1;
+    appendLog('system', `&gt; LANE PLATING upgraded to LV${STATE.upgrade_level} (-${cost}G, +${INTEG_PER_UPGRADE} integ, +${INCOME_PER_UPGRADE} income/round)`);
+    updateMeta();
+  };
+
+  document.getElementById('seed-input').oninput = (e) => {
+    STATE.seed = e.target.value.trim();
+    document.getElementById('seed-display').textContent = STATE.seed ? (STATE.seed.slice(0, 12) + '…') : 'randomize';
+  };
+
+  document.getElementById('seed-random').onclick = () => {
+    const s = randomSeedHex();
+    document.getElementById('seed-input').value = s;
+    STATE.seed = s;
+    document.getElementById('seed-display').textContent = s.slice(0, 12) + '…';
+  };
+
+  document.getElementById('ghost-select').onchange = (e) => {
+    if (STATE.is_simulating) { e.target.value = STATE.ghost_source; return; }
+    STATE.ghost_source = e.target.value;
+    STATE.ghost_board = SYNTHETIC_GHOSTS[STATE.ghost_source].board.map((p) => ({ ...p }));
+    reclassifyGhost();
+    appendLog('system', '&gt; opposition pool reassigned');
+  };
+
+  document.getElementById('submit-btn').onclick = runSimulation;
+
+  document.getElementById('clear-btn').onclick = () => {
+    if (STATE.is_simulating) return;
+    // Refund all
+    for (const p of STATE.player_board) STATE.currency += ITEMS_BY_ID[p.item_id].cost;
+    STATE.player_board = [];
+    redrawPlayer();
+    renderShop();
+    updateMeta();
+    appendLog('system', '&gt; board cleared, items refunded');
+  };
+
+  document.getElementById('reset-btn').onclick = () => {
+    if (STATE.is_simulating) return;
+    startNewRun();
+  };
+
+  // ---- Bureau wiring ----
+  const settingsBtn = document.getElementById('bureau-settings-btn');
+  if (settingsBtn) settingsBtn.onclick = openBureauSettings;
+  const settingsSave = document.getElementById('bureau-settings-save');
+  if (settingsSave) settingsSave.onclick = saveBureauSettingsFromDialog;
+  const settingsCancel = document.getElementById('bureau-settings-cancel');
+  if (settingsCancel) settingsCancel.onclick = closeBureauSettings;
+  const settingsClear = document.getElementById('bureau-settings-clear');
+  if (settingsClear) settingsClear.onclick = clearBureauSettingsFromDialog;
+
+  const codeInput = document.getElementById('bureau-code-input');
+  if (codeInput) {
+    codeInput.oninput = (e) => {
+      const v = e.target.value.toUpperCase();
+      if (e.target.value !== v) e.target.value = v;
+      STATE.bureau.code = v;
+      STATE.bureau.code_validated = false;
+      refreshBureauUI();
+    };
+    codeInput.onkeydown = (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); validateBureauCode(); }
+    };
+  }
+  const codeBtn = document.getElementById('bureau-code-validate');
+  if (codeBtn) codeBtn.onclick = validateBureauCode;
+
+  const poolToggle = document.getElementById('bureau-pool-toggle');
+  if (poolToggle) poolToggle.onchange = (e) => {
+    STATE.bureau.use_terminated_pool = !!e.target.checked;
+  };
+}
+
+// Switch between progress / test / bureau modes. Resets the run state.
+function switchMode(mode) {
+  STATE.mode = mode;
+  startNewRun();
+  const sliderRow = document.getElementById('round-slider-row');
+  const detail = document.getElementById('mode-detail');
+  const bureauPanel = document.getElementById('bureau-panel');
+  const footer = document.getElementById('footer-note');
+  document.querySelectorAll('.mode-btn').forEach((b) => {
+    b.classList.toggle('active', b.dataset.mode === mode);
+  });
+
+  bureauPanel.style.display = (mode === 'bureau') ? 'block' : 'none';
+
+  if (mode === 'test') {
+    sliderRow.style.display = 'flex';
+    detail.textContent = 'sandbox. fixed round, refilled currency, no permadeath. nothing recorded.';
+    if (footer) footer.innerHTML = 'sandbox mode. no toll burned. no character recorded.<br/>drift score is dialed manually here. in the trench, the bureau decides.';
+  } else if (mode === 'bureau') {
+    sliderRow.style.display = 'none';
+    detail.textContent = 'bureau submission. burns a TRN code on completion. dies in R4+ enters the terminated pool.';
+    if (footer) footer.innerHTML = 'BUREAU MODE \u2014 submissions are recorded to drift. one TRN code = one run.<br/>death in R4+ adds your final board to the terminated pool.';
+  } else {
+    sliderRow.style.display = 'none';
+    detail.textContent = 'round-by-round. start at R1. terminate at R4+ death.';
+    if (footer) footer.innerHTML = 'practice mode. no toll burned. no character recorded.<br/>drift score is dialed manually here. in the trench, the bureau decides.';
+  }
+  refreshBureauUI();
+  appendLog('system', '&gt;&gt; MODE: ' + mode.toUpperCase());
+}
+
+// ============================================================================
+// BUREAU UI WIRING
+// ============================================================================
+function refreshBureauUI() {
+  const connEl   = document.getElementById('bureau-conn-status');
+  const codeEl   = document.getElementById('bureau-code-status');
+  const detailEl = document.getElementById('bureau-code-detail');
+  if (!connEl) return;
+  if (bureauReady()) {
+    const host = STATE.bureau.url.replace(/^https?:\/\//, '').slice(0, 28);
+    connEl.textContent = host;
+    connEl.style.color = 'var(--good)';
+  } else {
+    connEl.textContent = '\u2014 not configured \u2014';
+    connEl.style.color = 'var(--stamp-red)';
+  }
+
+  if (STATE.bureau.code_validated && STATE.bureau.code_info) {
+    const info = STATE.bureau.code_info;
+    codeEl.textContent = 'OK \u2022 bal ' + info.balance + ' \u2022 T' + info.tier + (info.hidden ? ' \u2022 hidden' : '');
+    codeEl.style.color = 'var(--good)';
+    detailEl.textContent = 'armed. submit when ready. code burns on completion.';
+    detailEl.style.color = 'var(--good)';
+  } else if (STATE.bureau.code) {
+    codeEl.textContent = 'unvalidated';
+    codeEl.style.color = 'var(--warn)';
+    detailEl.textContent = 'press CHECK to validate against drift.';
+    detailEl.style.color = 'var(--ink-faded)';
+  } else {
+    codeEl.textContent = 'awaiting input';
+    codeEl.style.color = 'var(--ink-light)';
+    detailEl.textContent = 'enter a TRN code to arm bureau submission.';
+    detailEl.style.color = 'var(--ink-faded)';
+  }
+}
+
+function openBureauSettings() {
+  document.getElementById('bureau-url-input').value  = STATE.bureau.url || '';
+  document.getElementById('bureau-anon-input').value = STATE.bureau.anon_key || '';
+  document.getElementById('bureau-settings-status').textContent = '';
+  const dlg = document.getElementById('bureau-settings-dialog');
+  dlg.style.display = 'flex';
+}
+function closeBureauSettings() {
+  document.getElementById('bureau-settings-dialog').style.display = 'none';
+}
+async function saveBureauSettingsFromDialog() {
+  const url = document.getElementById('bureau-url-input').value.trim().replace(/\/$/, '');
+  const key = document.getElementById('bureau-anon-input').value.trim();
+  const status = document.getElementById('bureau-settings-status');
+  status.textContent = 'testing connection...';
+  STATE.bureau.url      = url;
+  STATE.bureau.anon_key = key;
+  if (!url || !key) {
+    status.textContent = 'both fields required.';
+    status.style.color = 'var(--stamp-red)';
+    return;
+  }
+  try {
+    await bureauPing();
+    saveBureauSettings();
+    status.textContent = 'connection OK \u2014 saved.';
+    status.style.color = 'var(--good)';
+    refreshBureauUI();
+    setTimeout(closeBureauSettings, 700);
+  } catch (e) {
+    status.textContent = 'failed: ' + e.message;
+    status.style.color = 'var(--stamp-red)';
+  }
+}
+function clearBureauSettingsFromDialog() {
+  STATE.bureau.url = '';
+  STATE.bureau.anon_key = '';
+  STATE.bureau.code = '';
+  STATE.bureau.code_validated = false;
+  STATE.bureau.code_info = null;
+  try { localStorage.removeItem(BUREAU_LS_KEY); } catch (e) {}
+  document.getElementById('bureau-url-input').value = '';
+  document.getElementById('bureau-anon-input').value = '';
+  document.getElementById('bureau-code-input').value = '';
+  document.getElementById('bureau-settings-status').textContent = 'cleared.';
+  refreshBureauUI();
+}
+
+async function validateBureauCode() {
+  const raw = document.getElementById('bureau-code-input').value.trim().toUpperCase();
+  if (!raw) {
+    appendLog('system', '&gt; enter a TRN code first.');
+    return;
+  }
+  STATE.bureau.code = raw;
+  STATE.bureau.code_validated = false;
+  STATE.bureau.code_info = null;
+  if (!bureauReady()) {
+    appendLog('fatal', '&gt; BUREAU: configure drift URL + anon key first.');
+    refreshBureauUI();
+    return;
+  }
+  const detailEl = document.getElementById('bureau-code-detail');
+  detailEl.textContent = 'validating against drift...';
+  detailEl.style.color = 'var(--ink-faded)';
+  try {
+    const res = await bureauRpc('trench_peek_code', { p_code: raw });
+    if (res && res.ok) {
+      STATE.bureau.code_validated = true;
+      STATE.bureau.code_info = res;
+      appendLog('system', '&gt;&gt; CODE OK \u2014 ' + raw + ' \u2022 bal ' + res.balance + ' \u2022 T' + res.tier + (res.hidden ? ' \u2022 hidden' : ''));
+    } else {
+      const err = (res && res.error) || 'unknown';
+      const prefix = (res && res.prefix) ? ' (prefix=' + res.prefix + ')' : '';
+      appendLog('fatal', '&gt; CODE REJECTED: ' + err + prefix);
+    }
+  } catch (e) {
+    appendLog('fatal', '&gt; BUREAU UNREACHABLE: ' + e.message);
+  }
+  refreshBureauUI();
+}
+
+// Reset to a fresh run state appropriate to the current mode.
+function startNewRun() {
+  STATE.player_board = [];
+  STATE.upgrade_level = 0;
+  STATE.run_terminated = false;
+  STATE.seed = '';
+  STATE.phantom_pool = 100;
+  STATE.currency = STARTING_CURRENCY[STATE.mode];
+  STATE.round = STATE.mode === 'test' ? parseInt(document.getElementById('round-slider').value, 10) : 1;
+  document.getElementById('seed-input').value = '';
+  document.getElementById('seed-display').textContent = 'randomize';
+  document.getElementById('result-banner').style.display = 'none';
+  document.getElementById('tick-viz-panel').style.display = 'none';
+  document.getElementById('tick-viz').innerHTML = '';
+  // Auto-assign ghost based on round
+  STATE.ghost_source = pickGhostForRound(STATE.round);
+  STATE.ghost_board = SYNTHETIC_GHOSTS[STATE.ghost_source].board.map((p) => ({ ...p }));
+  document.getElementById('ghost-select').value = STATE.ghost_source;
+  redrawPlayer();
+  renderShop();
+  updateMeta();
+  clearLog();
+  reclassifyGhost();
+  appendLog('system', '&gt;&gt; new run. mode: ' + STATE.mode.toUpperCase() + ' // round ' + STATE.round + ' // ' + STATE.currency + 'G');
+}
+
+// Reclassify the ghost panel — used between runs to reset the opposition seal.
+function reclassifyGhost() {
+  const panel = document.getElementById('ghost-panel');
+  panel.classList.add('classified');
+  panel.classList.remove('revealing');
+  // Clear the ghost grid so the next reveal doesn't briefly flash the old one
+  document.getElementById('ghost-grid').innerHTML = '';
+  document.getElementById('ghost-integrity').innerHTML = '';
+  document.getElementById('ghost-pool').textContent = '100';
+  document.getElementById('ghost-lanes').textContent = '4';
+}
+
+// ============================================================================
+// BOOT
+// ============================================================================
+async function boot() {
+  try {
+    loadCatalog();
+  } catch (e) {
+    appendLog('fatal', '&gt; CATALOG LOAD FAILED: ' + e.message);
+    appendLog('fatal', '&gt; (this should not happen with the standalone build)');
+    return;
+  }
+
+  // Initial ghost
+  STATE.ghost_board = SYNTHETIC_GHOSTS[STATE.ghost_source].board.map((p) => ({ ...p }));
+
+  // Bureau connection (loaded from localStorage; never auto-validates a code)
+  loadBureauSettings();
+
+  bindControls();
+  // Initialize via startNewRun to seed currency/round/ghost properly
+  startNewRun();
+  document.getElementById('drift-display').textContent = STATE.drift.toFixed(2);
+  refreshBureauUI();
+
+  appendLog('system', '&gt;&gt; bureau online. engine ' + ENGINE_VERSION);
+  appendLog('system', '&gt;&gt; ' + CATALOG.items.length + ' items loaded // ' + Object.keys(SYNTHETIC_GHOSTS).length + ' opposition profiles available');
+  appendLog('system', '&gt;&gt; opposition assignment sealed until submission.');
+  if (bureauReady()) {
+    appendLog('system', '&gt;&gt; bureau connection cached \u2014 switch to BUREAU mode to submit.');
+  }
+}
+
+boot();
+</script>
+
+</body>
+</html>

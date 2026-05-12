@@ -293,6 +293,78 @@ In rough priority order, once the Acurast fleet is actually producing reports:
 Don't start any of these until the user asks AND the active Acurast blocker
 is resolved.
 
+## TELEMETRY TRENCH (TRN-prefix Bureau submissions)
+
+A second deployable surface on `drift-metrics.com`: a deterministic-engine
+game loop gated by ASC `TRN-…` codes. Lives entirely in this repo.
+
+Pieces (all in repo root unless noted):
+
+- `combat_engine.js` — pure deterministic combat sim (browser + Node + TEE).
+  Same `{boards, drift, seed, round, items_catalog}` ⇒ same output, byte-exact.
+  No DOM/fs/net.
+- `combat_engine_runner.js` — Node stdin/stdout CLI shim. Not currently used
+  by the live flow but reserved for any subprocess invocation pattern.
+- `trench_items.json` — items catalog v0.1.0 (15 items across 4 categories).
+- `smoke.js` — one-line determinism smoke: `node smoke.js`. Run before pushing
+  any engine change.
+- `trench_practice.html` — standalone frontend (`drift-metrics.com/trench_practice.html`).
+  Three modes: PROGRESS (existing single-life run), SANDBOX (existing test
+  mode), BUREAU (new — gated by a `TRN` code, records to drift).
+- `trench.sql` — drift schema. Adds `trench_runs`, `trench_terminated_pool`,
+  RPCs `trench_peek_code` / `trench_start_run` / `trench_complete_run` /
+  `trench_pull_ghost` (anon), `trench_claim_audit_batch` / `trench_finish_audit`
+  (service_role). RLS enabled on both tables; anon reaches them only through
+  the RPCs. Re-declares `mint_code()` to recognise TRN (defaults: balance 1,
+  expiry 30 days).
+- `acurast/trench-verifier/` — second Acurast project. Pulls
+  `audit_status='pending'` rows on a 15-min interval, re-runs `simulate()` on
+  TEE, stamps `verified` / `mismatch`. Read `acurast/trench-verifier/README.md`.
+- `TRENCH_DEPLOY.md` — end-to-end deploy + smoke checklist. Open this when
+  the user wants to deploy or test.
+
+Why "audit after" instead of "TEE in critical path":
+
+Determinism makes audit cheap. Drift stores inputs + outputs verbatim. The
+verifier re-runs and compares byte-for-byte. This gives the same security
+guarantee as routing the player through the TEE on submit, without the
+player paying for the TEE roundtrip. Mismatches surface asynchronously.
+
+ASC prefix:
+
+`TRN` is registered in `ASC_SPEC.md §3` (DriftMetrics-specific). Defaults:
+balance 1, expiry 30 days. Burned only on `trench_complete_run`; abandoning a
+tab mid-run preserves the code. Hash tier and hidden flag are honoured by
+the frontend for cosmetic flavour; the gate is purely Layer-2 balance.
+
+Deferred (NOT to implement unless asked):
+
+- Bureau-mode round selector (round currently inherits from the
+  Progress/Sandbox state at mode-switch time).
+- TRN cross-mint into Sky Scaffold (waits on Steam-ticket auth — see
+  `STEAM_CLOUD_AUTH_NOTES.md`).
+- `.txt` code-surface artifact template for TRN drops.
+- Anonymous activity counter ("N other operators recently lodged").
+
+## OPERATOR CONSOLE (LOCAL-ONLY)
+
+There are now two local-only operator tools next to this file:
+
+- `asc-mint.local.html` — focused single-purpose ASC code minting UI.
+- `ops.local.html` — multi-tab operator station: cross-product code
+  view, Sky Scaffold vault browser (read-only), launch task surface,
+  runbook quick-render, Bridge status map for both Supabase profiles,
+  manual Acurast deploy checklist, days-to-launch countdown.
+
+Both are gitignored (`*.local.html`). Service-role keys live only in
+the operator's `localStorage`. See ECOSYSTEM.md §9 for the launch
+modes (FSA in Chrome/Edge, or `python -m http.server 8080` from
+`G:\Projects`).
+
+When the user mentions "the ops console" or "ops.local", that is the
+multi-tab one. When they say "the mint console" they mean the
+single-purpose one.
+
 ## STARTUP CHECKLIST FOR THE NEW LLM
 
 When you start the session, confirm you've understood by:

@@ -45,5 +45,14 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# ---- Local-only operator tools --------------------------------------------
+# Any HTML/JS/etc. that hardcodes or stores secrets (service-role keys, etc.)
+# and is meant for the operator's machine only, not for deployment.
+# Naming convention: *.local.html, *.local.js, etc.
+*.local.html
+*.local.js
+*.local.ts
+*.local.json
+
 # ---- Allow specific files that match patterns above ------------------------
 # (Any explicit unignores go here; for now nothing.)

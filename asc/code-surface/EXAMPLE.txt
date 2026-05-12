@@ -1,0 +1,4 @@
+CODE: ASL-EXAMPLE-001
+URL:  https://drift-metrics.com/index.html?code=ASL-EXAMPLE-001
+LORE: this is the shape of every code-drop artifact. four lines. no more.
+ASC:  v0.2 / ASL / universal
